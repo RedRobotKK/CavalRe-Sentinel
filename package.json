@@ -1,0 +1,65 @@
+{
+  "name": "@cavalre/sentinel",
+  "version": "0.1.0",
+  "description": "Production-grade trading system with arbitrary-precision math, state divergence detection, and hard risk enforcement",
+  "private": true,
+  "type": "module",
+  "workspaces": [
+    "packages/floatlib-ts",
+    "packages/ledger-ts",
+    "packages/risk-engine"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "build:watch": "tsc --watch",
+    "typecheck": "tsc --noEmit",
+    "typecheck:watch": "tsc --noEmit --watch",
+    "install:all": "npm install --recursive",
+    "build:all": "npm run --recursive build",
+    "typecheck:all": "npm run --recursive typecheck",
+    "test:all": "npm run --recursive test",
+    "test:coverage:all": "npm run --recursive test:coverage",
+    "lint:all": "npm run --recursive lint",
+    "format:all": "npm run --recursive format",
+    "clean": "npm run --recursive clean && rm -rf node_modules package-lock.json dist",
+    "backtest": "node scripts/backtest-pipeline.js",
+    "train:model": "node scripts/train-model.js",
+    "train:model:enhanced": "node scripts/train-model-enhanced.js",
+    "test:inference": "node scripts/test-inference.js",
+    "pipeline:start": "node scripts/autonomous-pipeline.js start",
+    "pipeline:stop": "node scripts/autonomous-pipeline.js stop",
+    "pipeline:status": "node scripts/autonomous-pipeline.js status",
+    "pipeline:logs": "node scripts/autonomous-pipeline.js logs",
+    "signals:fetch": "python3 scripts/fetch-signals.py",
+    "dashboard:server": "node scripts/dashboard-server.js",
+    "dashboard:serve": "npm run dashboard:server & echo 'Dashboard API ready at http://localhost:3000'"
+  },
+  "keywords": [
+    "trading",
+    "risk-management",
+    "position-sizing",
+    "ethereum",
+    "typescript",
+    "bigint",
+    "precision",
+    "divergence-detection"
+  ],
+  "author": "CavalRe Trading",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/RedRobotKK/CavalRe-Sentinel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/RedRobotKK/CavalRe-Sentinel/issues"
+  },
+  "homepage": "https://github.com/RedRobotKK/CavalRe-Sentinel#readme",
+  "dependencies": {
+    "axios": "^1.18.1",
+    "better-sqlite3": "^12.11.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.3",
+    "@types/node": "^20.10.6"
+  }
+}

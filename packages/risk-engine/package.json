@@ -1,0 +1,40 @@
+{
+  "name": "@cavalre/risk-engine",
+  "version": "0.1.0",
+  "description": "Position sizing and risk enforcement for CavalRe Sentinel",
+  "type": "module",
+  "main": "dist/risk-engine.js",
+  "types": "dist/risk-engine.d.ts",
+  "files": ["dist", "src"],
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage",
+    "lint": "eslint src test",
+    "format": "prettier --write src test"
+  },
+  "keywords": [
+    "risk-management",
+    "position-sizing",
+    "kelly-criterion",
+    "leverage",
+    "drawdown"
+  ],
+  "author": "CavalRe",
+  "license": "MIT",
+  "dependencies": {
+    "@cavalre/floatlib-ts": "file:../floatlib-ts"
+  },
+  "devDependencies": {
+    "typescript": "^5.3.0",
+    "vitest": "^1.1.0",
+    "@types/node": "^20.10.0",
+    "eslint": "^8.55.0",
+    "@typescript-eslint/parser": "^6.16.0",
+    "@typescript-eslint/eslint-plugin": "^6.16.0",
+    "prettier": "^3.1.0",
+    "tsx": "^4.7.0"
+  }
+}
