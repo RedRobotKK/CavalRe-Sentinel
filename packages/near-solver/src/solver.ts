@@ -50,6 +50,11 @@ export interface SolverConfig {
   halfSpreadBps: number;
   maxInventorySkewBps: number;
   quoteValidityMs: number;
+  /**
+   * Security (S3): min_deadline_ms is taker-controlled. An unbounded deadline
+   * is a free option written against us — cap how long any quote can bind.
+   */
+  maxDeadlineMs: number;
   minNotionalUsd: FloatLib.FloatFixed;
 }
 
@@ -95,7 +100,10 @@ export class SolverPipeline {
     const infoOut = registry.get(event.assetOut);
     if (!infoIn || !infoOut) return reject('asset_not_listed');
 
-    // 2. Mid price
+    // 2. Deadline cap (S3): refuse to write long-dated free options
+    if (event.minDeadlineMs > config.maxDeadlineMs) return reject('deadline_too_long');
+
+    // 3. Mid price
     const mid = priceSource.mid(event.assetIn, event.assetOut);
     if (mid === null) return reject('no_price');
 
@@ -165,7 +173,10 @@ export class SolverPipeline {
     const verdict = riskGuard.checkQuote({ notionalUsd });
     if (!verdict.allowed) return reject(verdict.reason);
 
-    const deadlineMs = Math.max(config.quoteValidityMs, event.minDeadlineMs);
+    const deadlineMs = Math.min(
+      Math.max(config.quoteValidityMs, event.minDeadlineMs),
+      config.maxDeadlineMs
+    );
     return {
       shouldQuote: true,
       quoteId: event.quoteId,
@@ -261,5 +272,86 @@ export class LedgerInventory implements InventoryView {
     const info = this.registry.get(asset);
     if (!info) throw new Error(`asset not in registry: ${asset}`);
     return info;
+  }
+}
+
+// ============================================================================
+// RESERVING INVENTORY — closes the in-flight quote race
+// ============================================================================
+
+interface Reservation {
+  asset: string;
+  amountRaw: bigint;
+  expiresAtMs: number;
+}
+
+/**
+ * Quotes are commitments: from the moment a quote_response is sent until its
+ * deadline passes (or it settles), the quoted payout must be held. Without
+ * this, two concurrent quotes can both pass the inventory check and the
+ * second settlement overdraws.
+ *
+ * Semantics:
+ *  - reserve() is all-or-nothing against UNRESERVED balance, false on
+ *    conflict or duplicate quoteId (no silent overwrite)
+ *  - expired reservations self-release lazily on every read
+ *  - commit() settles: applies the fill to the ledger, frees the hold
+ */
+export class ReservingInventory implements InventoryView {
+  private readonly reservations = new Map<string, Reservation>();
+
+  constructor(
+    private readonly base: LedgerInventory,
+    private readonly now: () => number
+  ) {}
+
+  availableRaw(asset: string): bigint {
+    this.sweepExpired();
+    let reserved = 0n;
+    for (const r of this.reservations.values()) {
+      if (r.asset === asset) reserved += r.amountRaw;
+    }
+    const available = this.base.availableRaw(asset) - reserved;
+    return available > 0n ? available : 0n;
+  }
+
+  reserve(quoteId: string, asset: string, amountRaw: bigint, expiresAtMs: number): boolean {
+    this.sweepExpired();
+    if (this.reservations.has(quoteId)) return false; // no silent overwrite
+    if (amountRaw <= 0n) return false;
+    if (amountRaw > this.availableRaw(asset)) return false;
+    this.reservations.set(quoteId, { asset, amountRaw, expiresAtMs });
+    return true;
+  }
+
+  release(quoteId: string): void {
+    this.reservations.delete(quoteId); // idempotent by Map semantics
+  }
+
+  /** Quote settled: record the fill in the ledger and free the hold. */
+  commit(
+    quoteId: string,
+    fill: {
+      assetIn: string;
+      amountInRaw: bigint;
+      assetOut: string;
+      amountOutRaw: bigint;
+      txHash: string;
+    }
+  ): void {
+    this.release(quoteId); // free the hold first so applyFill sees full balance
+    this.base.applyFill(fill);
+  }
+
+  get activeReservationCount(): number {
+    this.sweepExpired();
+    return this.reservations.size;
+  }
+
+  private sweepExpired(): void {
+    const t = this.now();
+    for (const [id, r] of this.reservations) {
+      if (r.expiresAtMs < t) this.reservations.delete(id);
+    }
   }
 }

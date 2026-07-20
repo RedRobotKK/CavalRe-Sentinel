@@ -54,9 +54,18 @@ export interface Nep413SignedData {
 
 const MALFORMED: RelayMessage = { kind: 'malformed' };
 
+/**
+ * Security (S1): length cap BEFORE BigInt parsing. u128 max supply is 39
+ * digits; longer strings are hostile input, and BigInt() on multi-megabyte
+ * strings is a CPU DoS.
+ */
+const MAX_AMOUNT_DIGITS = 40;
+
 /** Strict decimal-string -> bigint. Rejects sign, exponents, decimals, spaces. */
 function parseRawAmount(value: unknown): bigint | null {
-  if (typeof value !== 'string' || !/^[0-9]+$/.test(value)) return null;
+  if (typeof value !== 'string') return null;
+  if (value.length === 0 || value.length > MAX_AMOUNT_DIGITS) return null;
+  if (!/^[0-9]+$/.test(value)) return null;
   return BigInt(value);
 }
 

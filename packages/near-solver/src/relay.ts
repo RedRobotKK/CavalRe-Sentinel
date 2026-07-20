@@ -11,6 +11,9 @@
 
 import { parseRelayMessage, type QuoteRequestEvent, type SettlementEvent } from './codec';
 
+/** Security (S2): frames above this size are dropped unparsed. */
+const MAX_FRAME_BYTES = 262_144; // 256 KiB — real bus frames are < 2 KiB
+
 export interface TransportHandlers {
   onOpen: () => void;
   onMessage: (data: string) => void;
@@ -107,6 +110,11 @@ export class RelayClient {
 
   private handleFrame(data: string): void {
     this.stats.framesReceived += 1;
+    // Security (S2): drop oversized frames before JSON.parse touches them.
+    if (data.length > MAX_FRAME_BYTES) {
+      this.stats.malformedFrames += 1;
+      return;
+    }
     const msg = parseRelayMessage(data);
     switch (msg.kind) {
       case 'quote_request':

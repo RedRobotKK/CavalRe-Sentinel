@@ -70,6 +70,7 @@ function makePipeline(opts: {
       halfSpreadBps: 50,
       maxInventorySkewBps: 100,
       quoteValidityMs: 60_000,
+      maxDeadlineMs: 120_000,
       minNotionalUsd: FloatLib.toFloat(10n, 0n),
     },
     now: () => Date.parse('2026-07-20T12:00:00.000Z'),
