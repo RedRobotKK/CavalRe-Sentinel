@@ -16,7 +16,7 @@ has looked.
 | `minNotionalUsd` | FloatFixed | Dust floor per quote | $10 |
 | `maxQuoteNotionalUsd` | FloatFixed | Risk guard: single-quote cap | start tiny: $100 |
 | `maxDailyLossUsd` | FloatFixed | Risk guard: daily loss breaker | 1–2% of inventory value |
-| `maxDriftUsd` | FloatFixed | Reconciler: per-asset divergence tolerance | $1 |
+| `maxDriftUsd` | FloatFixed | Reconciler: per-asset divergence tolerance. Floor ~$0.01: FloatLib carries 21 significant digits, so 24-decimal tokens can round by sub-dust (X2) | $1 |
 | `maxAgeMs` (staleness) | int | Oldest acceptable price | 2_000–5_000 |
 | `dryRun` | bool | **Defaults TRUE.** Live requires explicit `false` + key | true until proven |
 
@@ -72,7 +72,10 @@ restart. Outcomes:
 **Kill switch: `reconciliation_divergence`**
 1. Do not clear the switch. Quoting is stopped; you have time.
 2. Pull the `ReconcileReport.drifts` — which asset, how much, which direction.
-3. Explain every drifted unit: an unmatched fill? a deposit you forgot? theft?
+   Note: settled fills matching pending quotes are auto-applied (`inferredFills`
+   in the report) and do NOT halt; if you're here, the drift matched nothing.
+3. Explain every drifted unit: a fill with off-by-something amounts? a deposit
+   you forgot? theft?
 4. Correct the ledger via explicit deposit/fill entries until a manual reconcile
    returns `ok`.
 5. Only then `clearKillSwitch()`. If you cannot explain the drift, the switch stays on.

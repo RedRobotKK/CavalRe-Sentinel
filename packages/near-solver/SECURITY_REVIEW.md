@@ -43,8 +43,17 @@ failing test before the fix landed (`test/security.test.ts`,
 - **`npm audit`**: 10 known vulns in dev tooling (eslint 8, vitest 1.x chain).
   No runtime exposure; scheduled for the vitest 3 / eslint 9 upgrade PR.
 
+## Cross-check pass (2026-07-20, third pass)
+
+Each lens audited the others' work. Findings and status live in
+[PRODUCTION_READINESS.md](../../docs/near-solver/PRODUCTION_READINESS.md#cross-check-log):
+X1 (settled fills false-halting the reconciler — **fixed** via PendingQuoteBook +
+exact-match fill inference), X2 (FloatLib precision floor under `maxDriftUsd` —
+documented), X3 (pointwise-only pricing tests — **fixed** via seeded property suites).
+
 ## Test inventory (near-solver)
 
-98 tests / 13 files: codec 12, nep413 13, pricing 11, risk 8, relay 7,
-solver+inventory 11, reservations 8, runner 7, wsTransport 2, security 5,
-integration 2, reconciler 6, staleness 6.
+109 tests / 15 files: codec 12, nep413 13, pricing 11, pricing-properties 4
+(×250 seeded cases each), risk 8, relay 7, solver+inventory 11, reservations 8,
+runner 7, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
+fill-inference 7.

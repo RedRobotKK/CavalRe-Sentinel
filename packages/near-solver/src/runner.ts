@@ -21,6 +21,7 @@ import {
 } from './codec';
 import { signNep413 } from './nep413';
 import { rawToFloat } from './pricing';
+import { PendingQuoteBook } from './reconciler';
 import { RelayClient, type TransportFactory } from './relay';
 import type { SolverRiskGuard } from './risk';
 import {
@@ -34,6 +35,8 @@ import {
 
 const INTENTS_VERIFIER = 'intents.near';
 const NONCE_BYTES = 32;
+/** Fills can settle slightly after the quote deadline; keep book entries matchable this long. */
+const SETTLEMENT_GRACE_MS = 30_000;
 
 export interface RunnerMetrics {
   counters: Record<string, number>;
@@ -59,6 +62,8 @@ export interface SolverRunnerOptions {
 
 export class SolverRunner {
   readonly inventory: ReservingInventory;
+  /** Outbound quotes awaiting settlement; hand this to the Reconciler. */
+  readonly pendingQuotes: PendingQuoteBook;
   readonly metrics: RunnerMetrics = { counters: {} };
 
   private readonly pipeline: SolverPipeline;
@@ -70,6 +75,7 @@ export class SolverRunner {
     this.dryRun = opts.dryRun ?? true;
     this.now = opts.now ?? Date.now;
     this.inventory = new ReservingInventory(opts.baseInventory, this.now);
+    this.pendingQuotes = new PendingQuoteBook({ graceMs: SETTLEMENT_GRACE_MS, now: this.now });
     this.pipeline = new SolverPipeline({
       registry: opts.registry,
       priceSource: opts.priceSource,
@@ -122,6 +128,16 @@ export class SolverRunner {
       this.count('quote_decision:reservation_conflict');
       return;
     }
+
+    // Register for fill inference (X1) — dry-run included, for parity.
+    this.pendingQuotes.register({
+      quoteId: decision.quoteId,
+      assetIn: decision.assetIn,
+      amountInRaw: decision.amountInRaw,
+      assetOut: decision.assetOut,
+      amountOutRaw: decision.amountOutRaw,
+      deadlineMs: Date.parse(decision.deadlineIso),
+    });
 
     if (this.dryRun) {
       this.count('quote_decision:would_quote_dry_run');
