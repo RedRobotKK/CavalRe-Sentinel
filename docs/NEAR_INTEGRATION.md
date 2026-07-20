@@ -36,6 +36,10 @@ signed NEP-413 `token_diff` intent → subscribe `quote_status` for settlement.
   into `data/near-intents.json`.
 - `src/near/` — superseded scaffold, now a pointer stub (safe to `git rm`).
 
+> **Documentation:** [Architecture](./near-solver/ARCHITECTURE.md) ·
+> [Operations runbook](./near-solver/OPERATIONS.md) ·
+> [Security review](../packages/near-solver/SECURITY_REVIEW.md)
+
 ## Roadmap (in order, no skipping)
 
 1. **Data first.** Run the fetcher, build a feature extractor over `execute()` /

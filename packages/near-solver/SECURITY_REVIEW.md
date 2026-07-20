@@ -17,15 +17,24 @@ failing test before the fix landed (`test/security.test.ts`,
 | O3 | SRE | No decision observability | Per-reason counters on every quote decision |
 | C1 | Security | Test nonce fixture must never reach production | Runner nonces are `randomBytes(32)` per quote; test asserts uniqueness across quotes |
 
+## Resolved since first pass (2026-07-20, second pass)
+
+- **Reconciliation** (was the live-mode blocker): `Reconciler` compares on-chain
+  `intents.near` balances against the ledger on a cadence. Divergence beyond
+  `maxDriftUsd` trips the kill switch (baseline deliberately not moved on halt);
+  value change between clean reconciles is recorded as PnL into the daily-loss
+  breaker. Unpriceable assets: any raw drift halts, PnL is skipped, never faked.
+- **Oracle staleness bounds**: `StalenessGuardedPriceSource` rejects prices older
+  than `maxAgeMs` AND future-dated prices (clock skew = fault). Stale resolves to
+  the existing `no_price` fail-closed path.
+
 ## Accepted risks / open items (tracked, not hidden)
 
-- **Settlement→quote matching**: quote_status events carry `quote_hash`, which
-  we don't yet learn from relay acks. Until that lands, `commit()` isn't called
-  automatically; reservations self-expire and reconciliation is manual.
-  Blocker for live mode with meaningful size.
-- **PriceSource is still abstract**: pipeline fail-closes (`no_price`), so the
-  system is safe but inert until an oracle adapter lands. Staleness bounds must
-  be part of that adapter's contract (reject prices older than N ms).
+- **Concrete adapters pending**: oracle (`TimestampedPriceSource` impl) and
+  `OnChainBalanceFetcher` (NEAR RPC) are interfaces with tested consumers but no
+  production implementation yet. The system is safe-but-inert without them.
+- **Bus settlement→quote matching**: still unimplemented; now an optimization
+  rather than a blocker, since reconciliation provides ground truth.
 - **Single-process concurrency only**: `ReservingInventory` is synchronous
   in-memory state. Fine for one runner process; a second process would need a
   shared store. Do not run two live runners against one inventory.
@@ -36,6 +45,6 @@ failing test before the fix landed (`test/security.test.ts`,
 
 ## Test inventory (near-solver)
 
-86 tests / 11 files: codec 12, nep413 13, pricing 11, risk 8, relay 7,
+98 tests / 13 files: codec 12, nep413 13, pricing 11, risk 8, relay 7,
 solver+inventory 11, reservations 8, runner 7, wsTransport 2, security 5,
-integration 2.
+integration 2, reconciler 6, staleness 6.

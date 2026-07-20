@@ -5,8 +5,12 @@ NEAR Intents solver built on the CavalRe stack: all money math through
 `@cavalre/ledger-ts` (double-entry, halts on overdraw), NEP-413 signing with
 zero external crypto dependencies (`node:crypto` ed25519).
 
-Built test-first. 64 tests cover every module including an end-to-end
+Built test-first. 98 tests cover every module including an end-to-end
 wire-frame-in → verified-signed-quote-out flow.
+
+**Docs:** [Architecture](../../docs/near-solver/ARCHITECTURE.md) ·
+[Operations runbook](../../docs/near-solver/OPERATIONS.md) ·
+[Security review](./SECURITY_REVIEW.md)
 
 ## Modules
 
@@ -17,7 +21,11 @@ wire-frame-in → verified-signed-quote-out flow.
 | `pricing` | Exact-in / exact-out pricing with spread in bps. Rounding is always solver-favorable: floor payouts, ceil charges. Handles tokens with >21 decimals (wNEAR = 24) via `rawToFloat`. |
 | `risk` | `SolverRiskGuard`: per-quote notional cap, daily loss cap, kill switch. Kill switch survives `resetDay()` — a human clears it. |
 | `solver` | `SolverPipeline`: pure decision engine (assets → price → skew → inventory → notional → risk), plus `LedgerInventory` (CavalRe ledger-backed, atomic fills). |
-| `relay` | Connection manager with injectable transport, capped exponential backoff, malformed-frame accounting. |
+| `relay` | Connection manager with injectable transport, capped exponential backoff, malformed-frame accounting, 256 KiB frame cap. |
+| `runner` | Composition root. Dry-run by default, key-gated live mode, random per-quote nonces, per-reason decision metrics. |
+| `reconciler` | Chain-truth reconciliation: divergence beyond tolerance trips the kill switch; value change between reconciles feeds the daily-loss breaker. |
+| `staleness` | `StalenessGuardedPriceSource`: age-bounds any timestamped oracle; stale or future-dated prices become `no_price`. |
+| `wsTransport` | The only real-I/O module: adapts global WebSocket to the relay's `Transport`. |
 
 ## Design rules
 
@@ -35,8 +43,11 @@ npm run typecheck     # strict TS, no emit
 
 ## Not yet implemented (deliberately)
 
-- Live transport binding (`WebSocket` wrapper for `wss://solver-relay-v2.chaindefuser.com/ws`) and API-key auth — next PR, behind dry-run.
-- Real `PriceSource` (oracle / ref.finance TWAP). The interface is in place; until wired, the pipeline fail-closes with `no_price`.
-- On-chain balance reconciliation (`intents.near` → ledger divergence check) and settlement→PnL feedback into the risk guard.
+- A concrete oracle adapter (ref.finance TWAP / Pyth). `StalenessGuardedPriceSource`
+  defines the contract it must satisfy; until wired, the pipeline fail-closes with
+  `no_price`.
+- A concrete `OnChainBalanceFetcher` (NEAR RPC view calls against `intents.near`).
+  The `Reconciler` is fully tested against the interface.
+- Bus settlement→quote matching (optimization; reconciliation is the safety net).
 
 See `docs/NEAR_INTEGRATION.md` for the roadmap.

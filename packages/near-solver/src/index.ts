@@ -6,3 +6,5 @@ export * from './solver';
 export * from './relay';
 export * from './runner';
 export * from './wsTransport';
+export * from './reconciler';
+export * from './staleness';
