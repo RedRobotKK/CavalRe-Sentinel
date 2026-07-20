@@ -20,6 +20,8 @@ export interface StatusReportInput {
   inventoryLines: { symbol: string; availableRaw: bigint; decimals: bigint }[];
   activeReservations: number;
   journalDropped: number;
+  /** X17: distinguishes "connected but quiet" from "not connected at all". */
+  relay?: { framesReceived: number; malformedFrames: number; reconnects: number };
 }
 
 export function formatStatusReport(input: StatusReportInput): string {
@@ -36,6 +38,19 @@ export function formatStatusReport(input: StatusReportInput): string {
     .map((l) => `${l.symbol} ${formatAmount(l.availableRaw, l.decimals)}`)
     .join(' | ');
   lines.push(`inventory: ${inventory || '(empty)'}`);
+
+  if (input.relay) {
+    const r = input.relay;
+    const health =
+      r.framesReceived === 0
+        ? r.reconnects > 0
+          ? '⚠ NO FRAMES EVER — connection failing (check API key / network)'
+          : '⚠ NO FRAMES YET — connected but nothing received (bus may require API key)'
+        : 'receiving';
+    lines.push(
+      `bus: ${r.framesReceived} frames | ${r.reconnects} reconnects | ${r.malformedFrames} malformed — ${health}`
+    );
+  }
 
   const counterKeys = Object.keys(input.counters).sort();
   if (counterKeys.length > 0) {

@@ -107,6 +107,31 @@ describe('formatStatusReport', () => {
     const report = formatStatusReport({ ...baseInput, journalDropped: 7 });
     expect(report).toMatch(/JOURNAL.*7.*dropped/i);
   });
+
+  it('X17: zero frames with reconnects reads as connection failure', () => {
+    const report = formatStatusReport({
+      ...baseInput,
+      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 5 },
+    });
+    expect(report).toMatch(/NO FRAMES EVER.*connection failing/i);
+  });
+
+  it('X17: zero frames without reconnects reads as connected-but-quiet', () => {
+    const report = formatStatusReport({
+      ...baseInput,
+      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 0 },
+    });
+    expect(report).toMatch(/NO FRAMES YET.*API key/i);
+  });
+
+  it('X17: receiving frames reads as healthy', () => {
+    const report = formatStatusReport({
+      ...baseInput,
+      relay: { framesReceived: 1234, malformedFrames: 1, reconnects: 2 },
+    });
+    expect(report).toContain('1234 frames');
+    expect(report).toContain('receiving');
+  });
 });
 
 // ---------------------------------------------------------------------------

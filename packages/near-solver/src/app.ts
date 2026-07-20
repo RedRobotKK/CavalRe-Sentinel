@@ -168,6 +168,7 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
         })),
         activeReservations: runner.inventory.activeReservationCount,
         journalDropped: journal.droppedEntries,
+        relay: runner.relayStats,
       }),
   };
 }

@@ -97,6 +97,11 @@ export class SolverRunner {
     });
   }
 
+  /** X17: relay health for the status report. */
+  get relayStats(): { framesReceived: number; malformedFrames: number; reconnects: number } {
+    return this.relay.stats;
+  }
+
   start(): void {
     if (!this.dryRun && !this.opts.privateKey) {
       throw new Error('live mode requires a private key; refusing to start');
