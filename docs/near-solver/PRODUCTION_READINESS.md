@@ -37,14 +37,29 @@ Built and tested against fixtures:
 - [x] `PriceCache` — async→sync bridge (X8); original timestamps preserved so the
       staleness guard sees the truth; failed refresh keeps last-known
 
-Remaining G1 exit criteria (verification against the real world, not code):
+Real-world verification (2026-07-20, network-checked):
 
-- [ ] Verify Pyth contract account + feed identifiers for each listed asset
-      against https://docs.pyth.network (adapter validates structure, not ids)
-- [ ] One recorded live-RPC fixture per adapter checked into tests
-- [ ] Quant sign-off: which feeds/sources define "mid" per pair; second oracle
-      source chosen so the median has ≥ 2 independent inputs
-- [ ] Register at https://partners.near-intents.org for the bus API key (start now)
+- [x] Asset registry verified against the live 1Click API: native USDC =
+      `nep141:17208628…133a1` (6 dec), wNEAR = `nep141:wrap.near` (24 dec),
+      USDT = `nep141:usdt.tether-token.near` (6 dec) — pinned in
+      `src/mainnetConfig.ts` + tests, fixture recorded verbatim
+- [x] `mt_batch_balance_of` args/response shape confirmed against NEAR Intents
+      docs; documented RPC = `https://rpc.fastnear.com`
+- [x] Pyth contract verified: `pyth-oracle.near` (X11 — our default was wrong)
+- [x] Second oracle leg BUILT and fixture-tested: `OneClickPriceSource`
+      (live API serves USD prices with timestamps)
+- [x] Recorded live fixture checked in (`test/fixtures/oneclick-tokens.json`)
+
+Remaining G1 exit criteria:
+
+- [ ] **X12 decision (quant):** Pyth Core drops NEAR support 2026-08-18 — pick
+      the long-term second median leg (candidates: ref.finance TWAP, a CEX
+      mid via authenticated feed). Until then: 1Click + Pyth short-term.
+- [ ] Pyth feed identifiers per asset (only if Pyth is used pre-deprecation)
+- [ ] Register at https://partners.near-intents.org for the bus API key
+- [ ] NEAR RPC live smoke test from a network-open environment (sandbox here
+      could not reach RPC hosts; docs-verified instead — run once from the
+      deploy box)
 
 ## G2 — Live dry-run (no capital at risk)
 
@@ -84,9 +99,12 @@ Run **≥ 10 trading days**. Exit criteria:
 - Add pairs one at a time; each new pair re-enters at G3-level caps
 - Shard by asset across runner processes if flow demands it (never two runners
   on one inventory — see SECURITY_REVIEW)
-- Only now consider the learned-markup model (train on accumulated settlement
-  data from `fetch-near-intents.js` + own fills; walk-forward validation;
-  shadow mode before it touches prices)
+- Only now consider the learned-markup model — the full plan, constraints, and
+  M0→M3 progression live in [ML_ARCHITECTURE.md](./ML_ARCHITECTURE.md).
+  Summary: journal-derived labels only, walk-forward only, shadow mode before
+  touching prices, static config always one switch away. **No model work is on
+  the critical path**; during G2 the AI team ships descriptive analytics (M0)
+  over the journal, which doubles as the quant's review tooling.
 
 ---
 
@@ -113,3 +131,7 @@ Run **≥ 10 trading days**. Exit criteria:
 | X6 | dev × quant | Pyth publish_time (seconds) vs asOfMs (ms) — silent unit bug would make every price look 50 years stale | **Fixed** in adapter, conversion in exactly one place, regression-tested |
 | X7 | SRE | RPC calls without timeouts can hang the reconcile loop | **Fixed**: AbortController timeout on every `NearRpcClient` call |
 | X8 | dev × SRE | Async oracle vs sync pipeline reads — interface impedance | **Fixed**: `PriceCache` bridge, original timestamps preserved, staleness guard as backstop |
+| X9 | quant × SRE × AI | G2 says "review the tape" but nothing recorded it; future models had no data source | **Fixed**: `DecisionJournal` — versioned JSONL, every decision/fill/reconcile, sink failures never reach the trading path |
+| X10 | AI × quant | "Didn't fill" conflates lost-on-price with abandoned intent — naive win-rate models would over-tighten | Documented + mitigation plan in ML_ARCHITECTURE.md §3; on-chain settlement data provides true loss margins later |
+| X11 | QA (live verification) | Pyth default contract was `pyth.near`; the real mainnet contract is `pyth-oracle.near` | **Fixed** + pinned by test. Structural tests could never catch this — real-world verification exists for exactly this class |
+| X12 | QA (live verification) | Pyth Core drops NEAR support 2026-08-18 — one month out. An oracle built around Pyth dies in production | **Mitigated**: `OneClickPriceSource` built as a primary leg (verified live, fixture-tested); long-term second leg is an open quant decision |

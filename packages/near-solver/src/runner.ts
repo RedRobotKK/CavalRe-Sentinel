@@ -21,6 +21,7 @@ import {
 } from './codec';
 import { signNep413 } from './nep413';
 import { rawToFloat } from './pricing';
+import type { DecisionJournal } from './journal';
 import { PendingQuoteBook } from './reconciler';
 import { RelayClient, type TransportFactory } from './relay';
 import type { SolverRiskGuard } from './risk';
@@ -57,6 +58,8 @@ export interface SolverRunnerOptions {
   /** SAFE DEFAULT: true. Live quoting requires an explicit false AND a key. */
   dryRun?: boolean;
   privateKey?: KeyObject;
+  /** The tape (X9): records every decision. Strongly recommended from G2 on. */
+  journal?: DecisionJournal;
   now?: () => number;
 }
 
@@ -111,6 +114,7 @@ export class SolverRunner {
 
   private onQuoteRequest(event: QuoteRequestEvent): void {
     const decision = this.pipeline.decide(event);
+    this.opts.journal?.recordDecision(event, decision);
     if (!decision.shouldQuote) {
       this.count(`quote_decision:${decision.reason}`);
       return;

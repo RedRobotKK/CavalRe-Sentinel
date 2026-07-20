@@ -29,7 +29,9 @@ import type { ViewCaller } from './nearRpc';
 import type { TimestampedPrice, TimestampedPriceSource } from './staleness';
 import { bpsToFraction } from './pricing';
 
-const DEFAULT_PYTH_CONTRACT = 'pyth.near';
+// X11: verified against docs.pyth.network 2026-07-20 (was wrongly 'pyth.near').
+// X12: Pyth Core drops NEAR support 2026-08-18 — short-lived leg only.
+const DEFAULT_PYTH_CONTRACT = 'pyth-oracle.near';
 const MS_PER_SECOND = 1000;
 const MAX_ABS_EXPO = 30;
 

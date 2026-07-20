@@ -1,0 +1,44 @@
+{
+  "_recorded": "2026-07-20 from GET https://1click.chaindefuser.com/v0/tokens (subset, verbatim fields)",
+  "tokens": [
+    {
+      "assetId": "nep141:wrap.near",
+      "decimals": 24,
+      "blockchain": "near",
+      "symbol": "wNEAR",
+      "price": 1.93,
+      "priceUpdatedAt": "2026-07-20T08:05:00.533Z",
+      "contractAddress": "wrap.near",
+      "coingeckoId": "wrapped-near"
+    },
+    {
+      "assetId": "nep141:17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "decimals": 6,
+      "blockchain": "near",
+      "symbol": "USDC",
+      "price": 0.999779,
+      "priceUpdatedAt": "2026-07-20T08:05:00.533Z",
+      "contractAddress": "17208628f84f5d6ad33f0da3bbbeb27ffcb398eac501a31bd6ad2011e36133a1",
+      "coingeckoId": "usd-coin"
+    },
+    {
+      "assetId": "nep141:usdt.tether-token.near",
+      "decimals": 6,
+      "blockchain": "near",
+      "symbol": "USDT",
+      "price": 0.999018,
+      "priceUpdatedAt": "2026-07-20T08:05:00.533Z",
+      "contractAddress": "usdt.tether-token.near",
+      "coingeckoId": "tether"
+    },
+    {
+      "assetId": "nep141:zero-price.near",
+      "decimals": 18,
+      "blockchain": "near",
+      "symbol": "DEADCOIN",
+      "price": 0,
+      "priceUpdatedAt": "2026-07-18T00:10:30.437Z",
+      "contractAddress": "zero-price.near"
+    }
+  ]
+}

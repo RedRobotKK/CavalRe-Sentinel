@@ -60,9 +60,30 @@ strictly validated (length, digit strings, 40-char cap), Pyth prices rejected
 on wide confidence intervals / non-positive values / absurd exponents, median
 oracle refuses single-source pricing and cross-source disagreement.
 
+## Journal pass (2026-07-20, fifth pass — AI team observing)
+
+X9 fixed: `DecisionJournal` records every decision/fill/reconcile as versioned
+JSONL. Security-relevant properties: a throwing sink never propagates into the
+trading path (dropped entries are counted, not fatal); no key material or
+signatures are journaled; amounts are exact decimal strings. X10 (label bias)
+documented with mitigation in ML_ARCHITECTURE.md. The ML plan's hard
+constraints (§2) are part of this review's scope going forward: models are
+parameter providers inside config clamps, never gate-bypasses.
+
+## Real-world verification pass (2026-07-20, sixth pass)
+
+QA verified configuration against live sources: 1Click token API (asset ids,
+decimals, prices — fixture recorded), NEAR Intents docs (`mt_batch_balance_of`
+shape, `rpc.fastnear.com`), Pyth docs (contract = `pyth-oracle.near`, X11) and
+caught the Pyth NEAR deprecation of 2026-08-18 (X12). `OneClickPriceSource`
+added as a verified primary oracle leg; `mainnetConfig.ts` pins all verified
+constants under test. Float prices from oracle APIs are converted to FloatLib
+once at ingestion — the single tolerated float boundary in the system.
+
 ## Test inventory (near-solver)
 
-131 tests / 19 files: codec 12, nep413 13, pricing 11, pricing-properties 4
+149 tests / 22 files: codec 12, nep413 13, pricing 11, pricing-properties 4
 (×250 seeded cases each), risk 8, relay 7, solver+inventory 11, reservations 8,
-runner 7, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
-fill-inference 7, nearRpc 5, balanceFetcher 4, oracle 10, priceCache 3.
+runner 8, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
+fill-inference 7, nearRpc 5, balanceFetcher 4, oracle 10, priceCache 3,
+journal 5, oneClick 6, mainnetConfig 6.

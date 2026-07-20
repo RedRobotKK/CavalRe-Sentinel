@@ -110,9 +110,15 @@ Production composition, outside-in:
 Pipeline reads (sync)
   └─ StalenessGuardedPriceSource(maxAgeMs)
        └─ MedianPriceSource(maxDeviationBps, minSources ≥ 2)
-            ├─ PriceCache(PythPriceSource)   ← refresh() on a 1–2s loop
-            └─ PriceCache(second provider)   ← required before live quoting
+            ├─ PriceCache(OneClickPriceSource)  ← verified live 2026-07-20; one
+            │                                     HTTP call per refresh cycle
+            └─ PriceCache(PythPriceSource)      ← pyth-oracle.near (X11);
+                                                  ⚠ DEPRECATED BY PYTH 2026-08-18
+                                                  (X12) — replace before then
 ```
+
+Real mainnet constants (asset ids, endpoints, G3 caps) live in
+`src/mainnetConfig.ts` and are pinned by tests — re-verify before editing.
 
 Refresh cadence must be well under `maxAgeMs` or every quote rejects with
 `no_price`. A `no_price` spike after deploy usually means the refresh loop
