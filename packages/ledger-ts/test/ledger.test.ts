@@ -39,7 +39,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         accounts: {
           '0xAlice': {
             balances: {
-              'USDC': FloatLib.toFloat(1000000n, 6n), // $1M
+              'USDC': FloatLib.toFloat(1000000000000n, 6n), // $1M
               'ETH': FloatLib.toFloat(100000000000000000n, 18n), // 0.1 ETH
             },
             nonce: 0n,
@@ -70,7 +70,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         accounts: {
           '0xAlice': {
             balances: {
-              'USDC': FloatLib.toFloat(1000000n, 6n),
+              'USDC': FloatLib.toFloat(1000000000000n, 6n),
               'ETH': FloatLib.from(1n, 17n),
             },
             nonce: 0n,
@@ -78,7 +78,7 @@ describe('Ledger - Event-Driven State Replica', () => {
           },
           '0xBob': {
             balances: {
-              'USDC': FloatLib.toFloat(500000n, 6n),
+              'USDC': FloatLib.toFloat(500000000000n, 6n),
             },
             nonce: 5n,
             timestamp: 1000000n,
@@ -111,7 +111,7 @@ describe('Ledger - Event-Driven State Replica', () => {
 
     it('should get total balance across all accounts for token', () => {
       const total = ledger.getTotalBalance('USDC');
-      const expected = FloatLib.toFloat(1500000n, 6n); // 1M + 500k
+      const expected = FloatLib.toFloat(1500000000000n, 6n); // 1M + 500k
       expect(FloatLib.isEQ(total, expected)).toBe(true);
     });
 
@@ -133,7 +133,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -148,7 +148,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       const change: BalanceChange = {
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n), // +$100k
+        amount: FloatLib.toFloat(100000000000n, 6n), // +$100k
         type: 'deposit',
         txHash: '0xabc123',
         blockNumber: 12346n,
@@ -157,7 +157,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange(change);
 
       const newBalance = ledger.getBalance('0xAlice', 'USDC');
-      const expected = FloatLib.toFloat(1100000n, 6n); // $1.1M
+      const expected = FloatLib.toFloat(1100000000000n, 6n); // $1.1M
       expect(FloatLib.isEQ(newBalance!, expected)).toBe(true);
     });
 
@@ -165,7 +165,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       const change: BalanceChange = {
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(300000n, 6n), // -$300k
+        amount: FloatLib.toFloat(300000000000n, 6n), // -$300k
         type: 'withdrawal',
         txHash: '0xdef456',
         blockNumber: 12346n,
@@ -174,7 +174,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange(change);
 
       const newBalance = ledger.getBalance('0xAlice', 'USDC');
-      const expected = FloatLib.toFloat(700000n, 6n); // $700k
+      const expected = FloatLib.toFloat(700000000000n, 6n); // $700k
       expect(FloatLib.isEQ(newBalance!, expected)).toBe(true);
     });
 
@@ -200,7 +200,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange({
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         type: 'deposit',
         txHash: '0xabc123',
         blockNumber: 12346n,
@@ -223,12 +223,12 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
           '0xBob': {
-            balances: { 'USDC': FloatLib.toFloat(500000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(500000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -245,7 +245,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xBob',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         txHash: '0xabc123',
         blockNumber: 12346n,
       };
@@ -265,7 +265,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xBob',
         token: 'USDC',
-        amount: FloatLib.toFloat(2000000n, 6n), // More than Alice has
+        amount: FloatLib.toFloat(2000000000000n, 6n), // More than Alice has
         txHash: '0xabc123',
         blockNumber: 12346n,
       };
@@ -280,7 +280,7 @@ describe('Ledger - Event-Driven State Replica', () => {
           from: '0xAlice',
           to: '0xBob',
           token: 'USDC',
-          amount: FloatLib.toFloat(300000n, 6n),
+          amount: FloatLib.toFloat(300000000000n, 6n),
           txHash: '0xabc123',
           blockNumber: 12346n,
         },
@@ -289,7 +289,7 @@ describe('Ledger - Event-Driven State Replica', () => {
           from: '0xBob',
           to: '0xAlice',
           token: 'USDC',
-          amount: FloatLib.toFloat(100000n, 6n),
+          amount: FloatLib.toFloat(100000000000n, 6n),
           txHash: '0xdef456',
           blockNumber: 12346n,
         },
@@ -311,7 +311,7 @@ describe('Ledger - Event-Driven State Replica', () => {
           from: '0xAlice',
           to: '0xBob',
           token: 'USDC',
-          amount: FloatLib.toFloat(600000n, 6n),
+          amount: FloatLib.toFloat(600000000000n, 6n),
           txHash: '0xabc123',
           blockNumber: 12346n,
         },
@@ -320,7 +320,7 @@ describe('Ledger - Event-Driven State Replica', () => {
           from: '0xBob',
           to: '0xAlice',
           token: 'USDC',
-          amount: FloatLib.toFloat(600000n, 6n), // This will fail
+          amount: FloatLib.toFloat(2000000000000n, 6n), // $2M > Bob's $1.1M -> must fail
           txHash: '0xdef456',
           blockNumber: 12346n,
         },
@@ -349,7 +349,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -366,7 +366,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       expect(FloatLib.toNumber(cachedBalance!)).toBeCloseTo(1000000, 2);
 
       // RPC says: $800k (someone withdrew)
-      const rpcBalance = FloatLib.toFloat(800000n, 6n);
+      const rpcBalance = FloatLib.toFloat(800000000000n, 6n);
 
       const diverged = ledger.checkDivergence('0xAlice', 'USDC', rpcBalance);
       expect(diverged).toBe(true);
@@ -390,7 +390,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.checkDivergence(
         '0xAlice',
         'USDC',
-        FloatLib.toFloat(500000n, 6n)
+        FloatLib.toFloat(500000000000n, 6n)
       );
 
       expect(ledger.isDiverged()).toBe(true);
@@ -401,7 +401,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xBob',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         txHash: '0xabc123',
         blockNumber: 12346n,
       };
@@ -422,7 +422,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -440,7 +440,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange({
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(500000n, 6n),
+        amount: FloatLib.toFloat(500000000000n, 6n),
         type: 'deposit',
         txHash: '0xabc123',
         blockNumber: 12346n,
@@ -460,7 +460,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange({
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         type: 'deposit',
         txHash: '0xabc123',
         blockNumber: 12346n,
@@ -486,7 +486,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -518,7 +518,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         txHash: '0xabc123',
         blockNumber: 12346n,
       };
@@ -533,7 +533,7 @@ describe('Ledger - Event-Driven State Replica', () => {
       ledger.applyBalanceChange({
         account: '0xAlice',
         token: 'USDC',
-        amount: FloatLib.toFloat(100000n, 6n),
+        amount: FloatLib.toFloat(100000000000n, 6n),
         type: 'deposit',
         txHash: '0xabc123',
         blockNumber: 12346n,
@@ -556,12 +556,12 @@ describe('Ledger - Event-Driven State Replica', () => {
         version: 1n,
         accounts: {
           '0xAlice': {
-            balances: { 'USDC': FloatLib.toFloat(1000000n, 6n), 'ETH': FloatLib.toFloat(1000000000000000000n, 18n) },
+            balances: { 'USDC': FloatLib.toFloat(1000000000000n, 6n), 'ETH': FloatLib.toFloat(1000000000000000000n, 18n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
           '0xBob': {
-            balances: { 'USDC': FloatLib.toFloat(500000n, 6n) },
+            balances: { 'USDC': FloatLib.toFloat(500000000000n, 6n) },
             nonce: 0n,
             timestamp: 1000000n,
           },
@@ -580,7 +580,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xBob',
         token: 'USDC',
-        amount: FloatLib.toFloat(300000n, 6n),
+        amount: FloatLib.toFloat(300000000000n, 6n),
         txHash: '0xabc123',
         blockNumber: 12346n,
       });
@@ -595,7 +595,7 @@ describe('Ledger - Event-Driven State Replica', () => {
         from: '0xAlice',
         to: '0xBob',
         token: 'USDC',
-        amount: FloatLib.toFloat(300000n, 6n),
+        amount: FloatLib.toFloat(300000000000n, 6n),
         txHash: '0xabc123',
         blockNumber: 12346n,
       });

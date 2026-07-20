@@ -38,7 +38,7 @@ export interface RiskConfig {
   maxLeverage: FloatLib.FloatFixed; // Max leverage ratio (e.g., 2.0x)
   maxDailyLoss: FloatLib.FloatFixed; // Max loss per day
   maxMonthlyLoss: FloatLib.FloatFixed; // Max loss per month
-  drawdownLimit: FloatLib.FloatFixed; // Drawdown circuit breaker
+  drawdownLimit: FloatLib.FloatFixed; // Drawdown circuit breaker, as FRACTION of peak equity (0.15 = 15%)
 }
 
 /**

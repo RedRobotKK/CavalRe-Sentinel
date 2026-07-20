@@ -13,7 +13,6 @@
     "resolveJsonModule": true,
     "moduleResolution": "node",
     "allowSyntheticDefaultImports": true,
-    "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
     "noImplicitAny": true,

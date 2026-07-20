@@ -33,13 +33,13 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
   describe('Initialization', () => {
     it('should initialize with default config', () => {
       const config: RiskConfig = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n), // $1k
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n), // $1k
         bufferPercent: FloatLib.toFloat(20n, 0n), // 20% buffer
-        maxPositionSize: FloatLib.toFloat(50000n, 6n), // $50k (5% of 1M capital)
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n), // $50k (5% of 1M capital)
         maxLeverage: FloatLib.toFloat(2n, 0n), // 2.0x max
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n), // $100k (10% of 1M)
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n), // $200k (20% of 1M)
-        drawdownLimit: FloatLib.toFloat(150000n, 6n), // $150k (15% of 1M)
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n), // $100k (10% of 1M)
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n), // $200k (20% of 1M)
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 = 15% max drawdown (fraction)
       };
 
       const engine = new RiskEngine(config);
@@ -48,13 +48,13 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     it('should calculate position buffer', () => {
       const config: RiskConfig = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       const engine = new RiskEngine(config);
@@ -74,20 +74,20 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n), // $1M
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n), // $1M
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n), // $50k
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n), // $50k
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
     });
 
     it('should calculate base position from surplus', () => {
-      const surplus = FloatLib.toFloat(5000n, 6n); // $5k surplus
+      const surplus = FloatLib.toFloat(5000000000n, 6n); // $5k surplus
       // Position = min(5% capital, 10x surplus, max position)
       // = min(50k, 50k, 50k) = 50k
       const position = engine.calculatePositionSize(surplus);
@@ -95,7 +95,7 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should cap position at 5% of capital', () => {
-      const smallSurplus = FloatLib.toFloat(1000000n, 6n); // $1M surplus (huge)
+      const smallSurplus = FloatLib.toFloat(1000000000000n, 6n); // $1M surplus (huge)
       // Position = min(5% capital, 10x surplus, max position)
       // = min(50k, 10M, 50k) = 50k
       const position = engine.calculatePositionSize(smallSurplus);
@@ -103,7 +103,7 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should scale with 10x leverage on surplus', () => {
-      const surplus = FloatLib.toFloat(1000n, 6n); // $1k surplus
+      const surplus = FloatLib.toFloat(1000000000n, 6n); // $1k surplus
       // Position = min(5% capital=50k, 10x surplus=10k, max position=50k)
       // = 10k
       const position = engine.calculatePositionSize(surplus);
@@ -127,37 +127,37 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n), // 2.0x
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
     });
 
     it('should enforce max leverage', () => {
-      const position = FloatLib.toFloat(500000n, 6n); // $500k position
-      const equity = FloatLib.toFloat(1000000n, 6n); // $1M equity
+      const position = FloatLib.toFloat(500000000000n, 6n); // $500k position
+      const equity = FloatLib.toFloat(1000000000000n, 6n); // $1M equity
       // Leverage = 500k / 1M = 0.5x ✓ (< 2.0x)
       const isAllowed = engine.checkLeverage(position, equity);
       expect(isAllowed).toBe(true);
     });
 
     it('should reject excessive leverage', () => {
-      const position = FloatLib.toFloat(2500000n, 6n); // $2.5M position
-      const equity = FloatLib.toFloat(1000000n, 6n); // $1M equity
+      const position = FloatLib.toFloat(2500000000000n, 6n); // $2.5M position
+      const equity = FloatLib.toFloat(1000000000000n, 6n); // $1M equity
       // Leverage = 2.5M / 1M = 2.5x ✗ (> 2.0x)
       const isAllowed = engine.checkLeverage(position, equity);
       expect(isAllowed).toBe(false);
     });
 
     it('should allow exactly max leverage', () => {
-      const position = FloatLib.toFloat(2000000n, 6n); // $2M position
-      const equity = FloatLib.toFloat(1000000n, 6n); // $1M equity
+      const position = FloatLib.toFloat(2000000000000n, 6n); // $2M position
+      const equity = FloatLib.toFloat(1000000000000n, 6n); // $1M equity
       // Leverage = 2M / 1M = 2.0x ✓ (exactly at limit)
       const isAllowed = engine.checkLeverage(position, equity);
       expect(isAllowed).toBe(true);
@@ -174,38 +174,38 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n), // $100k
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n), // $200k
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n), // $100k
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n), // $200k
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
     });
 
     it('should allow trade within daily loss limit', () => {
-      const dailyLoss = FloatLib.toFloat(50000n, 6n); // $50k loss
+      const dailyLoss = FloatLib.toFloat(50000000000n, 6n); // $50k loss
       const isAllowed = engine.checkDailyLoss(dailyLoss);
       expect(isAllowed).toBe(true);
     });
 
     it('should reject trade exceeding daily loss limit', () => {
-      const dailyLoss = FloatLib.toFloat(150000n, 6n); // $150k loss (> $100k limit)
+      const dailyLoss = FloatLib.toFloat(150000000000n, 6n); // $150k loss (> $100k limit)
       const isAllowed = engine.checkDailyLoss(dailyLoss);
       expect(isAllowed).toBe(false);
     });
 
     it('should allow trade within monthly loss limit', () => {
-      const monthlyLoss = FloatLib.toFloat(150000n, 6n); // $150k loss
+      const monthlyLoss = FloatLib.toFloat(150000000000n, 6n); // $150k loss
       const isAllowed = engine.checkMonthlyLoss(monthlyLoss);
       expect(isAllowed).toBe(true);
     });
 
     it('should reject trade exceeding monthly loss limit', () => {
-      const monthlyLoss = FloatLib.toFloat(250000n, 6n); // $250k loss (> $200k limit)
+      const monthlyLoss = FloatLib.toFloat(250000000000n, 6n); // $250k loss (> $200k limit)
       const isAllowed = engine.checkMonthlyLoss(monthlyLoss);
       expect(isAllowed).toBe(false);
     });
@@ -221,23 +221,23 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n), // 15%
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction // 15%
       };
 
       engine = new RiskEngine(config);
     });
 
     it('should calculate peak equity', () => {
-      const equity1 = FloatLib.toFloat(1000000n, 6n);
+      const equity1 = FloatLib.toFloat(1000000000000n, 6n);
       engine.updateEquity(equity1);
 
-      const equity2 = FloatLib.toFloat(900000n, 6n);
+      const equity2 = FloatLib.toFloat(900000000000n, 6n);
       engine.updateEquity(equity2);
 
       const peak = engine.getPeakEquity();
@@ -245,10 +245,10 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should calculate current drawdown', () => {
-      const equity1 = FloatLib.toFloat(1000000n, 6n);
+      const equity1 = FloatLib.toFloat(1000000000000n, 6n);
       engine.updateEquity(equity1);
 
-      const equity2 = FloatLib.toFloat(850000n, 6n); // 15% loss
+      const equity2 = FloatLib.toFloat(850000000000n, 6n); // 15% loss
       engine.updateEquity(equity2);
 
       const drawdown = engine.getCurrentDrawdown();
@@ -257,10 +257,10 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should alert when drawdown exceeds limit', () => {
-      const equity1 = FloatLib.toFloat(1000000n, 6n);
+      const equity1 = FloatLib.toFloat(1000000000000n, 6n);
       engine.updateEquity(equity1);
 
-      const equity2 = FloatLib.toFloat(840000n, 6n); // 16% loss (> 15% limit)
+      const equity2 = FloatLib.toFloat(840000000000n, 6n); // 16% loss (> 15% limit)
       engine.updateEquity(equity2);
 
       const exceeded = engine.isDrawdownExceeded();
@@ -278,13 +278,13 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
@@ -301,7 +301,7 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should calculate Kelly position size', () => {
-      const winRate = FloatLib.toFloat(55n, 0n); // 55% win rate
+      const winRate = FloatLib.toFloat(55n, 2n); // 0.55 = 55% win rate
       const avgWin = FloatLib.toFloat(150n, 0n); // $150
       const avgLoss = FloatLib.toFloat(100n, 0n); // $100
 
@@ -313,9 +313,9 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should provide comprehensive metrics', () => {
-      engine.updateEquity(FloatLib.toFloat(1000000n, 6n));
+      engine.updateEquity(FloatLib.toFloat(1000000000000n, 6n));
       engine.recordTrade({
-        pnl: FloatLib.toFloat(50000n, 6n),
+        pnl: FloatLib.toFloat(50000000000n, 6n),
         timestamp: 1000000n,
         symbol: 'USDC/ETH',
       });
@@ -338,13 +338,13 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
@@ -392,13 +392,13 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
 
     beforeEach(() => {
       config = {
-        workingCapital: FloatLib.toFloat(1000000n, 6n),
+        workingCapital: FloatLib.toFloat(1000000000000n, 6n),
         bufferPercent: FloatLib.toFloat(20n, 0n),
-        maxPositionSize: FloatLib.toFloat(50000n, 6n),
+        maxPositionSize: FloatLib.toFloat(50000000000n, 6n),
         maxLeverage: FloatLib.toFloat(2n, 0n),
-        maxDailyLoss: FloatLib.toFloat(100000n, 6n),
-        maxMonthlyLoss: FloatLib.toFloat(200000n, 6n),
-        drawdownLimit: FloatLib.toFloat(150000n, 6n),
+        maxDailyLoss: FloatLib.toFloat(100000000000n, 6n),
+        maxMonthlyLoss: FloatLib.toFloat(200000000000n, 6n),
+        drawdownLimit: FloatLib.toFloat(15n, 2n), // 0.15 fraction
       };
 
       engine = new RiskEngine(config);
@@ -420,7 +420,7 @@ describe('Risk Engine - Position Sizing & Enforcement', () => {
     });
 
     it('should handle 100% loss (drawdown = 1.0)', () => {
-      engine.updateEquity(FloatLib.toFloat(1000000n, 6n));
+      engine.updateEquity(FloatLib.toFloat(1000000000000n, 6n));
       engine.updateEquity(FloatLib.ZERO);
 
       const drawdown = engine.getCurrentDrawdown();
