@@ -62,6 +62,8 @@ export interface AssembledSolver {
   /** Call on a loop well under priceMaxAgeMs or every quote is no_price. */
   refreshPrices: () => Promise<void>;
   statusReport: () => string;
+  /** Structured snapshot for the web presentation layer (same truth as statusReport). */
+  statusSnapshot: () => import('./status.js').StatusReportInput;
 }
 
 export function assembleSolver(options: AssembleOptions): AssembledSolver {
@@ -146,6 +148,21 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
       : null;
 
   const startedAt = now();
+  const statusSnapshot = () => ({
+    dryRun: options.dryRun,
+    uptimeMs: now() - startedAt,
+    killSwitch: riskGuard.state.killSwitch,
+    counters: runner.metrics.counters,
+    inventoryLines: [...options.registry.entries()].map(([asset, info]) => ({
+      symbol: info.symbol,
+      availableRaw: runner.inventory.availableRaw(asset),
+      decimals: info.decimals,
+    })),
+    activeReservations: runner.inventory.activeReservationCount,
+    journalDropped: journal.droppedEntries,
+    relay: runner.relayStats,
+  });
+
   return {
     runner,
     reconciler,
@@ -155,21 +172,8 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     refreshPrices: async () => {
       await Promise.all(caches.map((c) => c.refresh()));
     },
-    statusReport: () =>
-      formatStatusReport({
-        dryRun: options.dryRun,
-        uptimeMs: now() - startedAt,
-        killSwitch: riskGuard.state.killSwitch,
-        counters: runner.metrics.counters,
-        inventoryLines: [...options.registry.entries()].map(([asset, info]) => ({
-          symbol: info.symbol,
-          availableRaw: runner.inventory.availableRaw(asset),
-          decimals: info.decimals,
-        })),
-        activeReservations: runner.inventory.activeReservationCount,
-        journalDropped: journal.droppedEntries,
-        relay: runner.relayStats,
-      }),
+    statusSnapshot,
+    statusReport: () => formatStatusReport(statusSnapshot()),
   };
 }
 

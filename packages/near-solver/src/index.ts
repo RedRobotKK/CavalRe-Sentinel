@@ -17,3 +17,5 @@ export * from './mainnetConfig.js';
 export * from './sinks.js';
 export * from './status.js';
 export * from './app.js';
+export * from './statusServer.js';
+export * from './dashboardHtml.js';

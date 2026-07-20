@@ -31,3 +31,32 @@ export function dailyFileSink(opts: DailyFileSinkOptions): JournalSink {
     appendLine(join(opts.directory, `decisions-${date}.jsonl`), line);
   };
 }
+
+/**
+ * In-memory ring of the most recent N journal lines — feeds the dashboard's
+ * decision stream without ever touching disk on the read path.
+ */
+export function ringSink(capacity: number): { sink: JournalSink; entries: () => string[] } {
+  const buffer: string[] = [];
+  return {
+    sink: (line: string) => {
+      buffer.push(line);
+      if (buffer.length > capacity) buffer.splice(0, buffer.length - capacity);
+    },
+    entries: () => [...buffer],
+  };
+}
+
+/** Fan out one journal line to several sinks; one failure never starves the rest. */
+export function teeSink(...sinks: JournalSink[]): JournalSink {
+  return (line: string) => {
+    for (const sink of sinks) {
+      try {
+        sink(line);
+      } catch {
+        // the DecisionJournal counts drops at its level; a tee leg failing
+        // must not take the other legs down with it
+      }
+    }
+  };
+}

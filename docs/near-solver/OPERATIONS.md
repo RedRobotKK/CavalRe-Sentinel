@@ -13,7 +13,15 @@ npm run solver:dry-run          # from the repo root
 That builds and starts the dry-run entrypoint: connects to the live solver bus,
 prices real quote requests with virtual inventory ($1k USDC / 500 wNEAR / $1k USDT),
 sends NOTHING, journals every decision to `./data/journal/decisions-YYYY-MM-DD.jsonl`,
-and prints a status block every 30s (env: `JOURNAL_DIR`, `STATUS_EVERY`).
+and prints a status block every 30s (env: `JOURNAL_DIR`, `STATUS_EVERY`,
+`DASHBOARD_PORT`).
+
+**Web dashboard:** open http://127.0.0.1:8787 while it runs. Read-only by
+construction (X18): GET-only, bound to 127.0.0.1, no mutating endpoints — the
+kill switch cannot be cleared from a browser. Exposing it beyond localhost
+requires a reverse proxy with auth AND a fresh security review. The UI shows
+the mode banner, kill-switch takeover, bus health, exact inventory (hover any
+amount for the raw value), decision counters, and the live decision stream.
 
 The status block reads top-down by importance: a tripped kill switch is always the
 first line; the mode banner (`DRY-RUN (nothing is sent)` vs `LIVE`) precedes all

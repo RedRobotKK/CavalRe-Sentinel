@@ -88,10 +88,20 @@ assembly REFUSES single-source pricing and virtual inventory at construction
 `dryRun: true` and holds no key; the compiled-artifact smoke test is now part
 of QA (X16 proved tests-green ≠ product-runs).
 
+## Web presentation pass (2026-07-20, eighth pass — designer + full-stack)
+
+X18 enforced by construction and by test: the status server answers GET only
+(405 for POST/PUT/DELETE/PATCH), binds 127.0.0.1 with the host not
+configurable, and exposes zero mutating endpoints — the kill switch cannot be
+touched from a browser. The dashboard is a single embedded file (no build
+step, no third-party JS, no CDN — nothing to supply-chain audit). Amounts
+cross the API as exact raw strings; formatting happens client-side with
+bigint math, raw truth on hover.
+
 ## Test inventory (near-solver)
 
-160 tests / 23 files: codec 12, nep413 13, pricing 11, pricing-properties 4
+174 tests / 24 files: codec 12, nep413 13, pricing 11, pricing-properties 4
 (×250 seeded cases each), risk 8, relay 7, solver+inventory 11, reservations 8,
 runner 8, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
 fill-inference 7, nearRpc 5, balanceFetcher 4, oracle 10, priceCache 3,
-journal 5, oneClick 6, mainnetConfig 6, delivery 11.
+journal 5, oneClick 6, mainnetConfig 6, delivery 14, statusServer 11.
