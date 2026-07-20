@@ -7,7 +7,8 @@
   "workspaces": [
     "packages/floatlib-ts",
     "packages/ledger-ts",
-    "packages/risk-engine"
+    "packages/risk-engine",
+    "packages/near-solver"
   ],
   "scripts": {
     "build": "tsc",

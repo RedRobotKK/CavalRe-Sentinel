@@ -26,11 +26,15 @@ signed NEP-413 `token_diff` intent → subscribe `quote_status` for settlement.
 
 ## What exists now
 
-- `src/near/NearIntentsSolver.ts` — solver adapter skeleton wired to `RiskValidator` and
-  `TradeDecisionEngine`. **Dry-run by default, fail-closed everywhere**: it will not
-  quote until pricing oracle and capital state are real.
+- **`packages/near-solver` (@cavalre/near-solver)** — the tested solver implementation,
+  built TDD-first (64 tests, strict TS). Codec, NEP-413 signing (spec-exact, zero crypto
+  deps), FloatLib pricing with solver-favorable rounding, ledger-backed inventory
+  (CavalRe double-entry, overdraw halts), fail-closed risk guard with kill switch,
+  reconnecting relay client with injectable transport, and an end-to-end
+  frame→signed-quote integration test. See its README for module map and open items.
 - `scripts/fetch-near-intents.js` — pulls real `intents.near` settlements from NearBlocks
   into `data/near-intents.json`.
+- `src/near/` — superseded scaffold, now a pointer stub (safe to `git rm`).
 
 ## Roadmap (in order, no skipping)
 
