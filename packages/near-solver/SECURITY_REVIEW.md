@@ -51,9 +51,18 @@ X1 (settled fills false-halting the reconciler — **fixed** via PendingQuoteBoo
 exact-match fill inference), X2 (FloatLib precision floor under `maxDriftUsd` —
 documented), X3 (pointwise-only pricing tests — **fixed** via seeded property suites).
 
+## G1 adapter pass (2026-07-20, fourth pass)
+
+Cross-referenced findings X4–X8 logged in
+[PRODUCTION_READINESS.md](../../docs/near-solver/PRODUCTION_READINESS.md#cross-check-log).
+New I/O surface reviewed: RPC timeouts mandatory (X7), balance responses
+strictly validated (length, digit strings, 40-char cap), Pyth prices rejected
+on wide confidence intervals / non-positive values / absurd exponents, median
+oracle refuses single-source pricing and cross-source disagreement.
+
 ## Test inventory (near-solver)
 
-109 tests / 15 files: codec 12, nep413 13, pricing 11, pricing-properties 4
+131 tests / 19 files: codec 12, nep413 13, pricing 11, pricing-properties 4
 (×250 seeded cases each), risk 8, relay 7, solver+inventory 11, reservations 8,
 runner 7, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
-fill-inference 7.
+fill-inference 7, nearRpc 5, balanceFetcher 4, oracle 10, priceCache 3.

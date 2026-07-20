@@ -21,23 +21,30 @@ Capital only ever increases at gate boundaries, never mid-gate.
       false-halt); staleness guard; property tests (1,000 randomized pricing cases)
 - [x] 237 tests repo-wide, CI on every push, docs cross-checked against code
 
-## G1 — Concrete adapters ← WE ARE HERE
+## G1 — Concrete adapters ← WE ARE HERE (code done; verification pending)
 
 *Lens: dev builds, quant reviews pricing, security reviews I/O.*
 
-Two small PRs against tested interfaces:
+Built and tested against fixtures:
 
-1. **Oracle adapter** implementing `TimestampedPriceSource` (ref.finance TWAP or
-   Pyth-on-NEAR), sitting behind `StalenessGuardedPriceSource`.
-   Exit: unit tests with recorded API fixtures; staleness cutoffs verified;
-   quant signs off on which pools/feeds define "mid" for each listed pair.
-2. **`OnChainBalanceFetcher`** doing NEAR RPC view calls (`mt_batch_balance_of`
-   on `intents.near`).
-   Exit: fixture tests; RPC failure paths verified (reconciler already treats
-   fetch failure as no-op by test).
+- [x] `NearRpcClient` — JSON-RPC view calls, abort timeout on every call (X7)
+- [x] `IntentsBalanceFetcher` — `mt_batch_balance_of`, strict length/digit validation
+- [x] `PythPriceSource` — expo scaling, publish_time seconds→ms (X6), confidence-
+      interval rejection (quant: publisher disagreement is not a price)
+- [x] `MedianPriceSource` — median across providers, cross-source deviation guard,
+      minSources floor (an outage must not become single-source pricing),
+      one poisoned source provably cannot move the median of three
+- [x] `PriceCache` — async→sync bridge (X8); original timestamps preserved so the
+      staleness guard sees the truth; failed refresh keeps last-known
 
-Also in G1: register at https://partners.near-intents.org for the solver-bus
-API key (lead time unknown — start now).
+Remaining G1 exit criteria (verification against the real world, not code):
+
+- [ ] Verify Pyth contract account + feed identifiers for each listed asset
+      against https://docs.pyth.network (adapter validates structure, not ids)
+- [ ] One recorded live-RPC fixture per adapter checked into tests
+- [ ] Quant sign-off: which feeds/sources define "mid" per pair; second oracle
+      source chosen so the median has ≥ 2 independent inputs
+- [ ] Register at https://partners.near-intents.org for the bus API key (start now)
 
 ## G2 — Live dry-run (no capital at risk)
 
@@ -101,3 +108,8 @@ Run **≥ 10 trading days**. Exit criteria:
 | X1 | quant × SRE composition | Settled fills would false-halt the solver (reconciler saw them as divergence) | **Fixed**: PendingQuoteBook + exact-match fill inference, 7 tests |
 | X2 | security × dev | FloatLib 21-sig-digit precision puts a floor under `maxDriftUsd` | Documented (this file + runbook) |
 | X3 | QA | Pricing invariants only tested pointwise | **Fixed**: 4 property suites × 250 seeded random cases |
+| X4 | security × quant | Assets on-chain but not in the registry are invisible to reconciliation (dust/airdrops) | Accepted: unquoted assets risk nothing; revisit if inventory assets grow |
+| X5 | quant × SRE | Double-count risk: both `realizedEdgeUsd` and reconciler PnL could feed the guard | Rule: **the Reconciler is the ONLY writer of PnL into the risk guard**. `realizedEdgeUsd` is for reporting/analysis only |
+| X6 | dev × quant | Pyth publish_time (seconds) vs asOfMs (ms) — silent unit bug would make every price look 50 years stale | **Fixed** in adapter, conversion in exactly one place, regression-tested |
+| X7 | SRE | RPC calls without timeouts can hang the reconcile loop | **Fixed**: AbortController timeout on every `NearRpcClient` call |
+| X8 | dev × SRE | Async oracle vs sync pipeline reads — interface impedance | **Fixed**: `PriceCache` bridge, original timestamps preserved, staleness guard as backstop |

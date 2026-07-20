@@ -102,6 +102,26 @@ restart. Outcomes:
    signature is only as good as the key).
 3. Audit recent settlements on `intents.near` for quotes you didn't make.
 
+## Oracle wiring (G1)
+
+Production composition, outside-in:
+
+```
+Pipeline reads (sync)
+  └─ StalenessGuardedPriceSource(maxAgeMs)
+       └─ MedianPriceSource(maxDeviationBps, minSources ≥ 2)
+            ├─ PriceCache(PythPriceSource)   ← refresh() on a 1–2s loop
+            └─ PriceCache(second provider)   ← required before live quoting
+```
+
+Refresh cadence must be well under `maxAgeMs` or every quote rejects with
+`no_price`. A `no_price` spike after deploy usually means the refresh loop
+isn't running — check that before blaming the oracle.
+
+**PnL single-writer rule (X5):** only the Reconciler calls
+`recordRealizedPnlUsd`. `realizedEdgeUsd` is an analysis helper — wiring it
+into the guard as well would double-count every loss.
+
 ## Constraints you must not violate
 
 - **One runner process per inventory.** Reservations are in-memory. Two live runners

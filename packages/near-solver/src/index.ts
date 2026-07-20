@@ -8,3 +8,6 @@ export * from './runner';
 export * from './wsTransport';
 export * from './reconciler';
 export * from './staleness';
+export * from './nearRpc';
+export * from './balanceFetcher';
+export * from './oracle';
