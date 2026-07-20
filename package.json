@@ -33,7 +33,8 @@
     "pipeline:logs": "node scripts/autonomous-pipeline.js logs",
     "signals:fetch": "python3 scripts/fetch-signals.py",
     "dashboard:server": "node scripts/dashboard-server.js",
-    "dashboard:serve": "npm run dashboard:server & echo 'Dashboard API ready at http://localhost:3000'"
+    "dashboard:serve": "npm run dashboard:server & echo 'Dashboard API ready at http://localhost:3000'",
+    "solver:dry-run": "npm run start:dry-run -w @cavalre/near-solver"
   },
   "keywords": [
     "trading",

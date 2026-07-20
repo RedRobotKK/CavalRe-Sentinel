@@ -20,8 +20,8 @@
  */
 
 import * as FloatLib from '@cavalre/floatlib-ts';
-import type { AsyncPriceFetcher } from './oracle';
-import type { TimestampedPrice } from './staleness';
+import type { AsyncPriceFetcher } from './oracle.js';
+import type { TimestampedPrice } from './staleness.js';
 
 const DEFAULT_URL = 'https://1click.chaindefuser.com/v0/tokens';
 const DEFAULT_TIMEOUT_MS = 5_000;

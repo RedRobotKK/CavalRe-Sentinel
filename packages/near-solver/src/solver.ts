@@ -19,9 +19,9 @@
 
 import * as FloatLib from '@cavalre/floatlib-ts';
 import { Ledger } from '@cavalre/ledger-ts';
-import type { QuoteRequestEvent } from './codec';
-import { priceExactIn, priceExactOut, inventorySkewBps, floorToRaw, rawToFloat } from './pricing';
-import type { SolverRiskGuard } from './risk';
+import type { QuoteRequestEvent } from './codec.js';
+import { priceExactIn, priceExactOut, inventorySkewBps, floorToRaw, rawToFloat } from './pricing.js';
+import type { SolverRiskGuard } from './risk.js';
 
 // ============================================================================
 // TYPES

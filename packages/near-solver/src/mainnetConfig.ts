@@ -17,7 +17,7 @@
  */
 
 import * as FloatLib from '@cavalre/floatlib-ts';
-import type { AssetRegistry } from './solver';
+import type { AssetRegistry } from './solver.js';
 
 // Verified defuse asset ids (NEAR-native legs)
 export const USDC_NEAR =

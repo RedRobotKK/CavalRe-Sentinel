@@ -14,9 +14,9 @@
  *    deadline + grace = not filled. No runtime labeling.
  */
 
-import type { QuoteRequestEvent } from './codec';
-import type { QuoteDecision } from './solver';
-import type { ReconcileReport } from './reconciler';
+import type { QuoteRequestEvent } from './codec.js';
+import type { QuoteDecision } from './solver.js';
+import type { ReconcileReport } from './reconciler.js';
 
 export const JOURNAL_SCHEMA_VERSION = 1;
 

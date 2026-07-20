@@ -10,8 +10,8 @@
  * fetcher is safe: the Reconciler propagates and changes no state (tested).
  */
 
-import type { OnChainBalanceFetcher } from './reconciler';
-import type { ViewCaller } from './nearRpc';
+import type { OnChainBalanceFetcher } from './reconciler.js';
+import type { ViewCaller } from './nearRpc.js';
 
 const DEFAULT_CONTRACT_ID = 'intents.near';
 /** Same rationale as codec S1: u128 max is 39 digits. */

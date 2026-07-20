@@ -6,7 +6,7 @@
  * the bus; everything else is tested against fakes.
  */
 
-import type { Transport, TransportFactory, TransportHandlers } from './relay';
+import type { Transport, TransportFactory, TransportHandlers } from './relay.js';
 
 interface MinimalWebSocket {
   onopen: (() => void) | null;

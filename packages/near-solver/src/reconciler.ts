@@ -16,9 +16,9 @@
  */
 
 import * as FloatLib from '@cavalre/floatlib-ts';
-import { rawToFloat } from './pricing';
-import type { SolverRiskGuard } from './risk';
-import type { AssetRegistry, LedgerInventory } from './solver';
+import { rawToFloat } from './pricing.js';
+import type { SolverRiskGuard } from './risk.js';
+import type { AssetRegistry, LedgerInventory } from './solver.js';
 
 export interface OnChainBalanceFetcher {
   /** Actual balances held on the verifier contract, in raw token units. */

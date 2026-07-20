@@ -18,13 +18,13 @@ import {
   buildTokenDiffMessage,
   type QuoteRequestEvent,
   type SettlementEvent,
-} from './codec';
-import { signNep413 } from './nep413';
-import { rawToFloat } from './pricing';
-import type { DecisionJournal } from './journal';
-import { PendingQuoteBook } from './reconciler';
-import { RelayClient, type TransportFactory } from './relay';
-import type { SolverRiskGuard } from './risk';
+} from './codec.js';
+import { signNep413 } from './nep413.js';
+import { rawToFloat } from './pricing.js';
+import type { DecisionJournal } from './journal.js';
+import { PendingQuoteBook } from './reconciler.js';
+import { RelayClient, type TransportFactory } from './relay.js';
+import type { SolverRiskGuard } from './risk.js';
 import {
   LedgerInventory,
   ReservingInventory,
@@ -32,7 +32,7 @@ import {
   type AssetRegistry,
   type PriceSource,
   type SolverConfig,
-} from './solver';
+} from './solver.js';
 
 const INTENTS_VERIFIER = 'intents.near';
 const NONCE_BYTES = 32;

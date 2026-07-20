@@ -63,7 +63,8 @@ Remaining G1 exit criteria:
 
 ## G2 — Live dry-run (no capital at risk)
 
-*Lens: SRE owns; quant reads the tape.*
+*Lens: SRE owns; quant reads the tape. PM: this gate is now one command —
+`npm run solver:dry-run` (X13).*
 
 Connect to `wss://solver-relay-v2.chaindefuser.com/ws` with `dryRun: true`.
 Run **≥ 5 consecutive trading days**. Exit criteria, all required:
@@ -135,3 +136,7 @@ Run **≥ 10 trading days**. Exit criteria:
 | X10 | AI × quant | "Didn't fill" conflates lost-on-price with abandoned intent — naive win-rate models would over-tighten | Documented + mitigation plan in ML_ARCHITECTURE.md §3; on-chain settlement data provides true loss margins later |
 | X11 | QA (live verification) | Pyth default contract was `pyth.near`; the real mainnet contract is `pyth-oracle.near` | **Fixed** + pinned by test. Structural tests could never catch this — real-world verification exists for exactly this class |
 | X12 | QA (live verification) | Pyth Core drops NEAR support 2026-08-18 — one month out. An oracle built around Pyth dies in production | **Mitigated**: `OneClickPriceSource` built as a primary leg (verified live, fixture-tested); long-term second leg is an open quant decision |
+| X13 | PM | The system was a library — no entrypoint, no way to actually run G2 | **Fixed**: `assembleSolver()` composition root + `npm run solver:dry-run` bin shell; composition is tested, shell is thin |
+| X14 | PM × quant | Median requires ≥2 sources but only one is verified until the X12 decision — G2 would be `no_price` forever | **Fixed by policy-in-code**: `minPriceSources: 1` permitted ONLY when `dryRun: true`; live assembly throws at construction. Same for virtual inventory |
+| X15 | Product designer | The operator (the actual user) had zero visibility: in-memory metrics, no journal files | **Fixed**: daily-rotating JSONL sink + status report (kill switch first line, unmissable mode banner, human amounts, loud journal-drop warning) |
+| X16 | PM (smoke test) | Tests green, product broken: compiled ESM had extensionless imports Node refuses — G2 day one would have failed to start | **Fixed**: NodeNext module resolution + `.js` specifiers; compiled-artifact smoke test now part of QA practice |

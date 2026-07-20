@@ -9,7 +9,7 @@
  *   - reconnect with capped exponential backoff; stop() means stop
  */
 
-import { parseRelayMessage, type QuoteRequestEvent, type SettlementEvent } from './codec';
+import { parseRelayMessage, type QuoteRequestEvent, type SettlementEvent } from './codec.js';
 
 /** Security (S2): frames above this size are dropped unparsed. */
 const MAX_FRAME_BYTES = 262_144; // 256 KiB — real bus frames are < 2 KiB

@@ -9,7 +9,7 @@
  */
 
 import type * as FloatLib from '@cavalre/floatlib-ts';
-import type { PriceSource } from './solver';
+import type { PriceSource } from './solver.js';
 
 export interface TimestampedPrice {
   price: FloatLib.FloatFixed;

@@ -4,6 +4,23 @@
 Quoting stops instantly; nothing else is affected; un-tripping is one call after a human
 has looked.
 
+## Quickstart: actually running it (X13)
+
+```bash
+npm run solver:dry-run          # from the repo root
+```
+
+That builds and starts the dry-run entrypoint: connects to the live solver bus,
+prices real quote requests with virtual inventory ($1k USDC / 500 wNEAR / $1k USDT),
+sends NOTHING, journals every decision to `./data/journal/decisions-YYYY-MM-DD.jsonl`,
+and prints a status block every 30s (env: `JOURNAL_DIR`, `STATUS_EVERY`).
+
+The status block reads top-down by importance: a tripped kill switch is always the
+first line; the mode banner (`DRY-RUN (nothing is sent)` vs `LIVE`) precedes all
+numbers; a bleeding journal is a loud warning. Dry-run intentionally runs with
+`minPriceSources: 1` (X14) — live assembly refuses single-source pricing and
+refuses virtual inventory at construction, so misconfiguration cannot start.
+
 ## Configuration reference
 
 | Key | Type | Meaning | Sane starting value |

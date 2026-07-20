@@ -80,10 +80,18 @@ added as a verified primary oracle leg; `mainnetConfig.ts` pins all verified
 constants under test. Float prices from oracle APIs are converted to FloatLib
 once at ingestion — the single tolerated float boundary in the system.
 
+## Deliverability pass (2026-07-20, seventh pass — PM + product designer)
+
+X13–X16 logged in PRODUCTION_READINESS. Security-relevant outcomes: live
+assembly REFUSES single-source pricing and virtual inventory at construction
+(misconfiguration cannot start); the dry-run entrypoint hardcodes
+`dryRun: true` and holds no key; the compiled-artifact smoke test is now part
+of QA (X16 proved tests-green ≠ product-runs).
+
 ## Test inventory (near-solver)
 
-149 tests / 22 files: codec 12, nep413 13, pricing 11, pricing-properties 4
+160 tests / 23 files: codec 12, nep413 13, pricing 11, pricing-properties 4
 (×250 seeded cases each), risk 8, relay 7, solver+inventory 11, reservations 8,
 runner 8, wsTransport 2, security 5, integration 2, reconciler 6, staleness 6,
 fill-inference 7, nearRpc 5, balanceFetcher 4, oracle 10, priceCache 3,
-journal 5, oneClick 6, mainnetConfig 6.
+journal 5, oneClick 6, mainnetConfig 6, delivery 11.

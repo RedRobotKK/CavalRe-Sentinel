@@ -25,9 +25,9 @@
  */
 
 import * as FloatLib from '@cavalre/floatlib-ts';
-import type { ViewCaller } from './nearRpc';
-import type { TimestampedPrice, TimestampedPriceSource } from './staleness';
-import { bpsToFraction } from './pricing';
+import type { ViewCaller } from './nearRpc.js';
+import type { TimestampedPrice, TimestampedPriceSource } from './staleness.js';
+import { bpsToFraction } from './pricing.js';
 
 // X11: verified against docs.pyth.network 2026-07-20 (was wrongly 'pyth.near').
 // X12: Pyth Core drops NEAR support 2026-08-18 — short-lived leg only.
