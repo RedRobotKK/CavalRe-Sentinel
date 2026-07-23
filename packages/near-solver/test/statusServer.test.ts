@@ -16,7 +16,7 @@ function sampleSnapshot(): StatusReportInput {
     inventoryLines: [{ symbol: 'USDC', availableRaw: 1_000_000n, decimals: 6n }],
     activeReservations: 0,
     journalDropped: 0,
-    relay: { framesReceived: 0, malformedFrames: 0, reconnects: 0 },
+    relay: { framesReceived: 0, malformedFrames: 0, reconnects: 0, auth: 'none' },
   };
 }
 
@@ -119,9 +119,9 @@ describe('createStatusServer', () => {
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/html');
       const html = await res.text();
-      expect(html).toContain('Near Solver Desk');
+      expect(html).toContain('Near Solver');
       expect(html).toContain('/desk.js');
-      expect(html).toContain('id="c"');
+      expect(html).toContain('id="stages"');
     } finally {
       await server.close();
     }
@@ -138,8 +138,9 @@ describe('createStatusServer', () => {
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('javascript');
       const js = await res.text();
-      expect(js).toContain('FBM');
-      expect(js).toContain('[desk] client loaded');
+      expect(js).toContain('STAGES');
+      expect(js).toContain('BUS');
+      expect(js).toContain('/api/status');
     } finally {
       await server.close();
     }

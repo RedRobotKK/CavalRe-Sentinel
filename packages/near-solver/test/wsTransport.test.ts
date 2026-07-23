@@ -10,7 +10,10 @@ class StubWebSocket {
   onerror: (() => void) | null = null;
   sent: string[] = [];
   closed = false;
-  constructor(public url: string) {
+  constructor(
+    public url: string,
+    _opts?: unknown
+  ) {
     StubWebSocket.instances.push(this);
   }
   send(data: string): void {
@@ -34,7 +37,8 @@ function handlers(): TransportHandlers & { events: string[] } {
 
 describe('makeWebSocketTransportFactory', () => {
   it('wires WebSocket events to transport handlers', () => {
-    const factory = makeWebSocketTransportFactory(StubWebSocket);
+    StubWebSocket.instances = [];
+    const factory = makeWebSocketTransportFactory({ ctor: StubWebSocket as never });
     const h = handlers();
     const transport = factory('wss://example', h);
     const ws = StubWebSocket.instances.at(-1)!;
@@ -51,7 +55,8 @@ describe('makeWebSocketTransportFactory', () => {
   });
 
   it('coerces non-string message data to string (Buffer frames)', () => {
-    const factory = makeWebSocketTransportFactory(StubWebSocket);
+    StubWebSocket.instances = [];
+    const factory = makeWebSocketTransportFactory({ ctor: StubWebSocket as never });
     const h = handlers();
     factory('wss://example', h);
     const ws = StubWebSocket.instances.at(-1)!;

@@ -1,15 +1,5 @@
 /**
  * PM + PRODUCT DESIGNER CROSS-CHECK — deliverability findings as tests.
- *
- *  X13 (PM): the system was a library with no way to run it. assembleSolver()
- *      is the one-call composition root; the bin script is a thin shell over it.
- *  X14 (PM × quant): only one oracle source is verified until the X12 decision,
- *      but the median demands minSources >= 2. Compromise, encoded here:
- *      minSources = 1 is permitted ONLY in dry-run. Live assembly with a
- *      single source must refuse to construct.
- *  X15 (designer): the operator is the user. Daily-rotating JSONL journal
- *      files they can open, and a status report they can read at a glance —
- *      kill switch first, DRY-RUN banner unmissable.
  */
 import { describe, it, expect } from 'vitest';
 import { dailyFileSink } from '../src/sinks';
@@ -17,10 +7,6 @@ import { formatStatusReport } from '../src/status';
 import { assembleSolver } from '../src/app';
 import { MAINNET_REGISTRY, USDC_NEAR, WNEAR } from '../src/mainnetConfig';
 import type { TransportHandlers, Transport } from '../src/relay';
-
-// ---------------------------------------------------------------------------
-// X15a: daily file sink
-// ---------------------------------------------------------------------------
 
 describe('dailyFileSink', () => {
   function makeSink(startMs: number) {
@@ -53,14 +39,10 @@ describe('dailyFileSink', () => {
   });
 });
 
-// ---------------------------------------------------------------------------
-// X15b: operator status report
-// ---------------------------------------------------------------------------
-
 describe('formatStatusReport', () => {
   const baseInput = {
     dryRun: true,
-    uptimeMs: 3_723_000, // 1h 2m 3s
+    uptimeMs: 3_723_000,
     killSwitch: null as string | null,
     counters: {
       'quote_decision:would_quote_dry_run': 42,
@@ -99,7 +81,7 @@ describe('formatStatusReport', () => {
     expect(report).toContain('would_quote_dry_run');
     expect(report).toContain('42');
     expect(report).toContain('USDC');
-    expect(report).toContain('1000'); // 1_000_000000 raw at 6 decimals
+    expect(report).toContain('1000');
     expect(report).toContain('reservations: 2');
   });
 
@@ -108,35 +90,41 @@ describe('formatStatusReport', () => {
     expect(report).toMatch(/JOURNAL.*7.*dropped/i);
   });
 
-  it('X17: zero frames with reconnects reads as connection failure', () => {
+  it('X17: auth=none zero frames is external JWT gate (not connection theater)', () => {
     const report = formatStatusReport({
       ...baseInput,
-      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 5 },
+      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 5, auth: 'none' },
     });
-    expect(report).toMatch(/NO FRAMES EVER.*connection failing/i);
+    expect(report).toMatch(/auth=none/i);
+    expect(report).toMatch(/PARTNER_JWT/i);
   });
 
-  it('X17: zero frames without reconnects reads as connected-but-quiet', () => {
+  it('X17: auth=none zero frames without reconnects still waits on JWT', () => {
     const report = formatStatusReport({
       ...baseInput,
-      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 0 },
+      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 0, auth: 'none' },
     });
-    expect(report).toMatch(/NO FRAMES YET.*API key/i);
+    expect(report).toMatch(/WAITING ON PARTNER_JWT/i);
   });
 
-  it('X17: receiving frames reads as healthy', () => {
+  it('X17: auth=bearer + frames reads as residual', () => {
     const report = formatStatusReport({
       ...baseInput,
-      relay: { framesReceived: 1234, malformedFrames: 1, reconnects: 2 },
+      relay: { framesReceived: 1234, malformedFrames: 1, reconnects: 2, auth: 'bearer' },
     });
     expect(report).toContain('1234 frames');
-    expect(report).toContain('receiving');
+    expect(report).toMatch(/auth=bearer/i);
+    expect(report).toMatch(/receiving residual/i);
+  });
+
+  it('X17: auth=bearer zero frames after reconnects is JWT/network check', () => {
+    const report = formatStatusReport({
+      ...baseInput,
+      relay: { framesReceived: 0, malformedFrames: 0, reconnects: 3, auth: 'bearer' },
+    });
+    expect(report).toMatch(/auth set but NO FRAMES/i);
   });
 });
-
-// ---------------------------------------------------------------------------
-// X13 + X14: composition root
-// ---------------------------------------------------------------------------
 
 function fakeRelayFactory() {
   const transports: { handlers: TransportHandlers; sent: string[] }[] = [];
@@ -164,7 +152,7 @@ describe('assembleSolver (X13: the one-call composition root)', () => {
   it('assembles a dry-run solver with virtual inventory in one call', () => {
     const app = assembleSolver(baseOptions());
     expect(app.runner).toBeDefined();
-    expect(app.reconciler).toBeNull(); // virtual inventory -> nothing on-chain to reconcile
+    expect(app.reconciler).toBeNull();
     expect(app.inventory.availableRaw(USDC_NEAR)).toBe(1_000_000000n);
   });
 
