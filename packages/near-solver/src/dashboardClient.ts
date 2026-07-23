@@ -1,6 +1,6 @@
 /**
- * Desk client — served as application/javascript at /desk.js
- * Keep as a plain string (no nested template issues).
+ * Desk client — /desk.js
+ * Transparent blockchain block field + circuit stages.
  */
 
 export const DASHBOARD_JS = `
@@ -25,69 +25,104 @@ export const DASHBOARD_JS = `
   var W = 0;
   var H = 0;
   var dpr = 1;
+  var t0 = performance.now();
+
+  /* ---- transparent blockchain block field ---- */
+  var chainNodes = [];
+  var chainEdges = [];
+
+  function rebuildChain() {
+    chainNodes = [];
+    chainEdges = [];
+    if (W < 10 || H < 10) return;
+    var cols = Math.max(6, Math.floor(W / 70));
+    var rows = Math.max(4, Math.floor(H / 55));
+    var padX = 30;
+    var padY = 24;
+    var cellW = (W - padX * 2) / cols;
+    var cellH = (H - padY * 2) / rows;
+    var i, j, n, idx;
+    for (j = 0; j < rows; j++) {
+      for (i = 0; i < cols; i++) {
+        var jitterX = (hash(i * 3.1, j * 7.3) - 0.5) * cellW * 0.25;
+        var jitterY = (hash(i * 5.7, j * 2.9) - 0.5) * cellH * 0.25;
+        chainNodes.push({
+          x: padX + (i + 0.5) * cellW + jitterX,
+          y: padY + (j + 0.5) * cellH + jitterY,
+          z: hash(i, j),
+          phase: hash(i + 1, j + 2) * Math.PI * 2,
+          size: 10 + hash(i * 2, j * 2) * 8,
+        });
+      }
+    }
+    // connect each node to next in row (chain) + occasional down-right (DAG)
+    for (j = 0; j < rows; j++) {
+      for (i = 0; i < cols; i++) {
+        idx = j * cols + i;
+        if (i < cols - 1) chainEdges.push([idx, idx + 1]);
+        if (j < rows - 1 && hash(i, j) > 0.45) {
+          var down = (j + 1) * cols + Math.min(cols - 1, i + (hash(j, i) > 0.5 ? 1 : 0));
+          chainEdges.push([idx, down]);
+        }
+      }
+    }
+  }
 
   function hash(x, y) {
     var n = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
     return n - Math.floor(n);
   }
-  function noise(x, y) {
-    var ix = Math.floor(x);
-    var iy = Math.floor(y);
-    var fx = x - ix;
-    var fy = y - iy;
-    var ux = fx * fx * (3 - 2 * fx);
-    var uy = fy * fy * (3 - 2 * fy);
-    var a = hash(ix, iy);
-    var b = hash(ix + 1, iy);
-    var c = hash(ix, iy + 1);
-    var d = hash(ix + 1, iy + 1);
-    return a + (b - a) * ux + (c - a) * uy * (1 - ux) + (d - b) * ux * uy;
-  }
-  function fbm(x, y, oct) {
-    var v = 0;
-    var a = 0.5;
-    var f = 1;
-    for (var i = 0; i < oct; i++) {
-      v += a * noise(x * f, y * f);
-      f *= 2.03;
-      a *= 0.5;
-    }
-    return v;
-  }
 
-  var noiseCV = document.createElement("canvas");
-  var noiseCTX = noiseCV.getContext("2d");
-  var noiseT = 0;
+  function drawBlockField(now) {
+    var t = (now - t0) / 1000;
+    var e, a, b, n, k, pulse, alpha, s;
 
-  function bakeNoise(t) {
-    var nw = Math.max(64, Math.floor(W / 4) || 64);
-    var nh = Math.max(36, Math.floor(H / 4) || 36);
-    noiseCV.width = nw;
-    noiseCV.height = nh;
-    var img = noiseCTX.createImageData(nw, nh);
-    var data = img.data;
-    var aspect = nw / Math.max(1, nh);
-    for (var y = 0; y < nh; y++) {
-      for (var x = 0; x < nw; x++) {
-        var u = (x / nw) * aspect * 3;
-        var v = (y / nh) * 3;
-        var n1 = fbm(u + t * 0.12, v + t * 0.08, 5);
-        var n2 = fbm(u * 2.1 - t * 0.2, v * 2.1 + t * 0.1, 4);
-        var flow = Math.max(0, Math.min(1, (n1 - 0.25) / 0.45));
-        var spark = Math.max(0, Math.min(1, (n2 - 0.65) / 0.3));
-        var conduit = Math.exp(-Math.pow((y / nh - 0.4) * 5.5, 2));
-        var r = (0.96 * (0.08 + flow * 0.35 + spark * 0.55 + conduit * (0.12 + burst * 0.2))) * 255;
-        var g = (0.65 * (0.06 + flow * 0.2 + spark * 0.3 + conduit * 0.08)) * 255;
-        var b = (0.12 + spark * 0.4 * conduit) * 255;
-        var al = (0.35 + flow * 0.4 + spark * 0.45 + conduit * 0.2 + burst * 0.15) * 255;
-        var o = (y * nw + x) * 4;
-        data[o] = r;
-        data[o + 1] = g;
-        data[o + 2] = b;
-        data[o + 3] = Math.min(230, al);
-      }
+    // edges first (behind blocks)
+    for (k = 0; k < chainEdges.length; k++) {
+      e = chainEdges[k];
+      a = chainNodes[e[0]];
+      b = chainNodes[e[1]];
+      if (!a || !b) continue;
+      var flow = (t * 0.35 + a.phase) % 1;
+      ctx.beginPath();
+      ctx.moveTo(a.x, a.y);
+      ctx.lineTo(b.x, b.y);
+      ctx.strokeStyle = "rgba(45, 212, 191, " + (0.06 + burst * 0.08) + ")";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // traveling packet on edge
+      var px = a.x + (b.x - a.x) * flow;
+      var py = a.y + (b.y - a.y) * flow;
+      ctx.beginPath();
+      ctx.arc(px, py, 1.4, 0, Math.PI * 2);
+      ctx.fillStyle = "rgba(245, 166, 35, " + (0.25 + burst * 0.35) + ")";
+      ctx.fill();
     }
-    noiseCTX.putImageData(img, 0, 0);
+
+    // transparent blocks (isometric-ish diamonds / rounded rects)
+    for (k = 0; k < chainNodes.length; k++) {
+      n = chainNodes[k];
+      pulse = 0.5 + 0.5 * Math.sin(t * 1.2 + n.phase);
+      alpha = 0.1 + n.z * 0.12 + pulse * 0.06 + burst * 0.08;
+      s = n.size * (0.9 + pulse * 0.08);
+
+      // glass body
+      ctx.save();
+      ctx.translate(n.x, n.y);
+      ctx.rotate(Math.PI / 4);
+      ctx.beginPath();
+      ctx.rect(-s / 2, -s / 2, s, s);
+      ctx.fillStyle = "rgba(20, 40, 38, " + alpha + ")";
+      ctx.fill();
+      ctx.strokeStyle = "rgba(45, 212, 191, " + (0.15 + pulse * 0.2 + burst * 0.15) + ")";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+      // inner highlight
+      ctx.strokeStyle = "rgba(245, 166, 35, " + (0.08 + pulse * 0.1) + ")";
+      ctx.lineWidth = 0.8;
+      ctx.strokeRect(-s / 2 + 2, -s / 2 + 2, s - 4, s - 4);
+      ctx.restore();
+    }
   }
 
   function resize() {
@@ -98,11 +133,11 @@ export const DASHBOARD_JS = `
     cv.width = Math.floor(W * dpr);
     cv.height = Math.floor(H * dpr);
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    bakeNoise(noiseT);
+    rebuildChain();
   }
   window.addEventListener("resize", resize);
 
-  function boxes() {
+  function stageBoxes() {
     var n = STAGES.length;
     var pad = 20;
     var bw = Math.min(72, (W - pad * 2) / n - 8);
@@ -154,45 +189,37 @@ export const DASHBOARD_JS = `
   }
 
   var last = 0;
-  var bakeAcc = 0;
   function frame(ts) {
     var dt = Math.min(0.033, (ts - last) / 1000 || 0.016);
     last = ts;
-    noiseT += dt;
-    bakeAcc += dt;
     burst = Math.max(0, burst - dt * 0.4);
     if (W < 4) resize();
-    if (bakeAcc > 0.1) {
-      bakeAcc = 0;
-      bakeNoise(noiseT);
-    }
 
+    // clear
     ctx.fillStyle = "#05070a";
     ctx.fillRect(0, 0, W, H);
-    ctx.globalAlpha = 1;
-    try {
-      ctx.drawImage(noiseCV, 0, 0, W, H);
-    } catch (e) {}
 
-    ctx.strokeStyle = "rgba(245,166,35,0.07)";
+    // blockchain field (background)
+    drawBlockField(ts);
+
+    // soft vignette so stages read
+    var vg = ctx.createRadialGradient(W / 2, H * 0.4, 40, W / 2, H * 0.4, Math.max(W, H) * 0.65);
+    vg.addColorStop(0, "rgba(5,7,10,0)");
+    vg.addColorStop(1, "rgba(5,7,10,0.55)");
+    ctx.fillStyle = vg;
+    ctx.fillRect(0, 0, W, H);
+
+    // ellipse ring
+    ctx.strokeStyle = "rgba(45,212,191," + (0.1 + burst * 0.12) + ")";
     ctx.lineWidth = 1;
-    var hz = H * 0.68;
-    for (var gi = 0; gi < 8; gi++) {
-      var gy = hz + gi * gi * 2;
-      if (gy > H) break;
-      ctx.beginPath();
-      ctx.moveTo(0, gy);
-      ctx.lineTo(W, gy);
-      ctx.stroke();
-    }
-    ctx.strokeStyle = "rgba(245,166,35," + (0.12 + burst * 0.15) + ")";
     ctx.beginPath();
     ctx.ellipse(W / 2, H * 0.42, W * 0.38, H * 0.18, 0, 0, Math.PI * 2);
     ctx.stroke();
 
-    var bx = boxes();
+    var bx = stageBoxes();
     for (var hi = 0; hi < heat.length; hi++) heat[hi] = Math.max(0, heat[hi] - dt * 0.5);
 
+    // stage link particles
     for (var li = links.length - 1; li >= 0; li--) {
       var p = links[li];
       p.t += p.sp * dt;
@@ -216,11 +243,12 @@ export const DASHBOARD_JS = `
         : "rgba(255,200,80," + (0.45 + pa * 0.5) + ")";
       ctx.fill();
     }
-    if (Math.random() < 0.12) {
+    if (Math.random() < 0.1) {
       var si = Math.floor(Math.random() * (STAGES.length - 1));
       spawn(si, si + 1, Math.random() > 0.35);
     }
 
+    // circuit stages on top
     for (var i = 0; i < bx.length; i++) {
       var b = bx[i];
       var live = counts[i] > 0;
@@ -242,8 +270,8 @@ export const DASHBOARD_JS = `
         g.addColorStop(0, "#3d2a00");
         g.addColorStop(1, "#1a1200");
       } else {
-        g.addColorStop(0, "#1a1610");
-        g.addColorStop(1, "#0c0a08");
+        g.addColorStop(0, "rgba(26,22,16,0.92)");
+        g.addColorStop(1, "rgba(12,10,8,0.92)");
       }
       rr(b.x, b.y, b.w, b.h, 4);
       ctx.fillStyle = g;
@@ -277,11 +305,11 @@ export const DASHBOARD_JS = `
       }
     }
 
-    ctx.fillStyle = "rgba(180,160,100,0.85)";
+    ctx.fillStyle = "rgba(120,160,150,0.75)";
     ctx.font = "11px ui-monospace,monospace";
     ctx.textAlign = "left";
     ctx.fillText(
-      "FBM x5  links=" + links.length + "  " + Math.round(W) + "x" + Math.round(H),
+      "chain " + chainNodes.length + " blocks · " + chainEdges.length + " links · " + Math.round(W) + "x" + Math.round(H),
       10,
       H - 10
     );
@@ -537,6 +565,6 @@ export const DASHBOARD_JS = `
 
   tick();
   setInterval(tick, 2000);
-  console.info("[desk] client loaded");
+  console.info("[desk] client loaded — chain field");
 })();
 `;

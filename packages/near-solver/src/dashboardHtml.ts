@@ -1,5 +1,5 @@
 /**
- * Desk shell only. Client logic is /desk.js (see dashboardClient.ts).
+ * Desk shell only. Client logic is /desk.js (dashboardClient.ts).
  */
 
 export const DASHBOARD_HTML = `<!DOCTYPE html>
@@ -52,7 +52,7 @@ h1{font:600 13px system-ui;margin:0}.sub{color:#6b7c86;font-weight:400;font-size
 <div class="shell">
   <header>
     <div class="logo">NS</div>
-    <h1>Near Solver Desk<span class="sub">CavalRe · FBM circuit</span></h1>
+    <h1>Near Solver Desk<span class="sub">CavalRe · chain field</span></h1>
     <span class="badge" id="mode">dry-run</span>
     <div class="right">uptime <b id="up">—</b> · <span id="clk">—</span></div>
   </header>
@@ -62,7 +62,7 @@ h1{font:600 13px system-ui;margin:0}.sub{color:#6b7c86;font-weight:400;font-size
       <div id="bars" class="muted">waiting…</div>
     </div>
     <div class="hero">
-      <h2>Circuit · 5-octave FBM noise field</h2>
+      <h2>Circuit · transparent block chain field</h2>
       <div class="stage"><canvas id="c"></canvas></div>
       <div class="intent" id="intent">USDC → wNEAR · waiting</div>
     </div>
