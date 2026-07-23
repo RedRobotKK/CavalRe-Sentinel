@@ -1,5 +1,5 @@
 /**
- * Desk client — calm, decision-driven. No decorative lattice.
+ * Desk client — calm; BUS stage = frames only (not decide count).
  */
 
 export const DASHBOARD_JS = `
@@ -65,7 +65,10 @@ export const DASHBOARD_JS = `
       var live = counts[i] > 0;
       var hot = heat[i] > 0.15;
       box.className = "stage-box" + (hot ? " hot" : live ? " live" : "");
-      if (i === 3 && drop > 0) {
+      if (i === 0 && counts[0] === 0) {
+        f.textContent = "NO FRAMES";
+        f.className = "stage-flag";
+      } else if (i === 3 && drop > 0) {
         f.textContent = "DROP −" + drop;
         f.className = "stage-flag drop";
       } else if (live) {
@@ -78,7 +81,7 @@ export const DASHBOARD_JS = `
     }
   }
 
-  var heatTimer = setInterval(function () {
+  setInterval(function () {
     var dirty = false;
     for (var i = 0; i < heat.length; i++) {
       if (heat[i] > 0) {
@@ -108,10 +111,10 @@ export const DASHBOARD_JS = `
   }
   function sym(id) {
     id = String(id || "");
-    if (/wrap\.near/i.test(id)) return "wNEAR";
+    if (/wrap\\.near/i.test(id)) return "wNEAR";
     if (/usdt/i.test(id)) return "USDT";
     if (/usdc|17208628/i.test(id)) return "USDC";
-    var n = id.replace(/^nep\d+:/, "");
+    var n = id.replace(/^nep\\d+:/, "");
     return n.length > 14 ? n.slice(0, 7) + "…" + n.slice(-3) : n;
   }
   function fmtAmt(raw, dec) {
@@ -140,15 +143,19 @@ export const DASHBOARD_JS = `
 
     var r = (s && s.relay) || {};
     var frames = r.framesReceived || 0;
+    var auth = r.auth || "none";
     document.getElementById("bus").innerHTML =
       '<div class="kv"><span class="k">Frames</span><span class="v">' +
       frames +
+      "</span></div>" +
+      '<div class="kv"><span class="k">Auth</span><span class="v warn">' +
+      auth +
       "</span></div>" +
       '<div class="kv"><span class="k">Reconnects</span><span class="v">' +
       (r.reconnects || 0) +
       "</span></div>" +
       '<div class="kv"><span class="k">Bus</span><span class="v warn">' +
-      (frames > 0 ? "up" : "no frames") +
+      (frames > 0 ? "residual" : auth === "none" ? "waiting JWT" : "no frames") +
       "</span></div>";
 
     var inv = (s && s.inventory) || [];
@@ -177,7 +184,8 @@ export const DASHBOARD_JS = `
       else if (k.indexOf("quote_decision:") === 0) rejects += c[k];
     });
     var seen = would + rejects;
-    counts = [frames || seen, seen, seen, seen, seen, would];
+    // BUS = frames only — never steal decide count
+    counts = [frames, seen, seen, seen, seen, would];
     drop = rejects;
 
     if (would > lastWould || rejects > lastReject) emit();
@@ -326,7 +334,7 @@ export const DASHBOARD_JS = `
       })
       .join("");
     document.getElementById("stream").innerHTML =
-      rows || '<div class="muted">Run solver:cover to populate tape</div>';
+      rows || '<div class="muted">Residual tape empty until PARTNER_JWT + frames</div>';
   }
 
   function tick() {
@@ -350,6 +358,5 @@ export const DASHBOARD_JS = `
 
   tick();
   setInterval(tick, 2000);
-  console.info("[desk] calm shell");
 })();
 `;

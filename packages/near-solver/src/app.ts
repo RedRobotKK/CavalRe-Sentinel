@@ -1,17 +1,7 @@
 /**
  * COMPOSITION ROOT (X13)
  *
- * assembleSolver() is the ONE call that turns the library into a product:
- * config -> oracle legs -> caches -> median -> staleness guard -> risk guard
- * -> runner (+ journal) -> optional reconciler. The bin script is a thin
- * shell over this; tests exercise this, not the shell.
- *
- * Deliverability rules encoded here (PM × quant × security, X14):
- *  - minPriceSources < 2 is DRY-RUN ONLY. Live single-source pricing is
- *    refused at construction, not discovered in production.
- *  - Virtual inventory is DRY-RUN ONLY. Pretend money cannot go live.
- *  - Virtual inventory disables the reconciler (nothing on-chain to
- *    reconcile against); a real account id + real deposits enable it.
+ * assembleSolver() is the ONE call that turns the library into a product.
  */
 
 import type { KeyObject } from 'node:crypto';
@@ -33,24 +23,23 @@ import { SolverRunner } from './runner.js';
 import { LedgerInventory, type AssetRegistry } from './solver.js';
 import { StalenessGuardedPriceSource } from './staleness.js';
 import { formatStatusReport } from './status.js';
-import { makeWebSocketTransportFactory } from './wsTransport.js';
+import { authorizationFromEnv, makeWebSocketTransportFactory } from './wsTransport.js';
 
 const DEFAULT_MEDIAN_DEVIATION_BPS = 100;
 
 export interface AssembleOptions {
   registry: AssetRegistry;
   dryRun: boolean;
-  /** X14: values below 2 are refused unless dryRun. */
   minPriceSources: number;
-  /** Dry-run only: seed pretend inventory (asset -> raw amount). */
   virtualInventory?: Map<string, bigint>;
-  /** Real solver account on intents.near; enables the reconciler. */
   accountId?: string;
   privateKey?: KeyObject;
   priceFetchers?: AsyncPriceFetcher[];
   transportFactory?: TransportFactory;
   journalSink?: JournalSink;
   now?: () => number;
+  /** Override env; tests inject. */
+  partnerAuthorization?: string;
 }
 
 export interface AssembledSolver {
@@ -59,18 +48,17 @@ export interface AssembledSolver {
   inventory: SolverRunner['inventory'];
   journal: DecisionJournal;
   riskGuard: SolverRiskGuard;
-  /** Call on a loop well under priceMaxAgeMs or every quote is no_price. */
   refreshPrices: () => Promise<void>;
   statusReport: () => string;
-  /** Structured snapshot for the web presentation layer (same truth as statusReport). */
   statusSnapshot: () => import('./status.js').StatusReportInput;
+  /** Whether PARTNER_JWT (or inject) is present — not proof of frames. */
+  relayAuth: 'none' | 'bearer';
 }
 
 export function assembleSolver(options: AssembleOptions): AssembledSolver {
   const now = options.now ?? Date.now;
   const g3 = MAINNET.g3Defaults;
 
-  // --- deliverability guards: fail at construction, not in production ---
   if (!options.dryRun && options.minPriceSources < 2) {
     throw new Error('single-source pricing is dry-run only (X14): provide >= 2 price sources for live');
   }
@@ -78,7 +66,6 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     throw new Error('virtual inventory is dry-run only: fund the real account for live');
   }
 
-  // --- inventory ---
   const baseInventory = new LedgerInventory(options.registry);
   if (options.virtualInventory) {
     for (const [asset, amountRaw] of options.virtualInventory) {
@@ -86,7 +73,6 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     }
   }
 
-  // --- oracle stack ---
   const fetchers = options.priceFetchers ?? [new OneClickPriceSource({ now })];
   const assets = [...options.registry.keys()];
   const pairs: [string, string][] = [];
@@ -102,12 +88,19 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     now,
   });
 
-  // --- risk + journal + runner ---
   const riskGuard = new SolverRiskGuard({
     maxQuoteNotionalUsd: g3.maxQuoteNotionalUsd,
     maxDailyLossUsd: g3.maxDailyLossUsd,
   });
   const journal = new DecisionJournal({ sink: options.journalSink ?? (() => {}), now });
+
+  const authorization =
+    options.partnerAuthorization ?? authorizationFromEnv();
+  const relayAuth: 'none' | 'bearer' = authorization ? 'bearer' : 'none';
+  const transportFactory =
+    options.transportFactory ??
+    makeWebSocketTransportFactory(authorization ? { authorization } : {});
+
   const runner = new SolverRunner({
     registry: options.registry,
     priceSource,
@@ -123,7 +116,7 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     },
     relay: {
       url: MAINNET.solverRelayWsUrl,
-      transportFactory: options.transportFactory ?? makeWebSocketTransportFactory(),
+      transportFactory,
       reconnectMinMs: 1_000,
       reconnectMaxMs: 30_000,
     },
@@ -133,7 +126,6 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     now,
   });
 
-  // --- reconciler: real accounts only ---
   const reconciler =
     options.virtualInventory === undefined && options.accountId !== undefined
       ? new Reconciler({
@@ -160,7 +152,11 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     })),
     activeReservations: runner.inventory.activeReservationCount,
     journalDropped: journal.droppedEntries,
-    relay: runner.relayStats,
+    relay: {
+      ...runner.relayStats,
+      auth: relayAuth,
+    },
+    risk: riskGuard.state,
   });
 
   return {
@@ -169,6 +165,7 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
     inventory: runner.inventory,
     journal,
     riskGuard,
+    relayAuth,
     refreshPrices: async () => {
       await Promise.all(caches.map((c) => c.refresh()));
     },
@@ -177,7 +174,6 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
   };
 }
 
-/** Convenience for the bin script: real balance fetcher over mainnet RPC. */
 export function mainnetBalanceFetcher(accountId: string): IntentsBalanceFetcher {
   return new IntentsBalanceFetcher({
     rpc: new NearRpcClient({ url: MAINNET.rpcUrls[0]! }),

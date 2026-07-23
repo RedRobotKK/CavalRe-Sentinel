@@ -1,14 +1,5 @@
 /**
  * SOLVER RUNNER — composition root.
- *
- * Safety posture (SRE-reviewed):
- *  - dryRun defaults to TRUE. Live mode requires BOTH an explicit
- *    dryRun:false AND a private key; refusing to start beats quoting blind.
- *  - Reservations happen in dry-run too, so dry-run traffic exercises the
- *    exact code path live traffic will.
- *  - Nonces are crypto-random per quote. Never fixtures, never reused.
- *  - Metrics: every decision outcome is counted by reason; no secret
- *    material is ever logged or exported.
  */
 
 import { randomBytes, type KeyObject } from 'node:crypto';
@@ -36,7 +27,6 @@ import {
 
 const INTENTS_VERIFIER = 'intents.near';
 const NONCE_BYTES = 32;
-/** Fills can settle slightly after the quote deadline; keep book entries matchable this long. */
 const SETTLEMENT_GRACE_MS = 30_000;
 
 export interface RunnerMetrics {
@@ -55,17 +45,14 @@ export interface SolverRunnerOptions {
     reconnectMinMs: number;
     reconnectMaxMs: number;
   };
-  /** SAFE DEFAULT: true. Live quoting requires an explicit false AND a key. */
   dryRun?: boolean;
   privateKey?: KeyObject;
-  /** The tape (X9): records every decision. Strongly recommended from G2 on. */
   journal?: DecisionJournal;
   now?: () => number;
 }
 
 export class SolverRunner {
   readonly inventory: ReservingInventory;
-  /** Outbound quotes awaiting settlement; hand this to the Reconciler. */
   readonly pendingQuotes: PendingQuoteBook;
   readonly metrics: RunnerMetrics = { counters: {} };
 
@@ -97,15 +84,10 @@ export class SolverRunner {
     });
   }
 
-  /** X17: relay health for the status report. */
   get relayStats(): { framesReceived: number; malformedFrames: number; reconnects: number } {
     return this.relay.stats;
   }
 
-  /**
-   * Inject a protocol-valid quote_request through the SAME path as the bus.
-   * Used by Tier A intentSim; does not mark relay frames.
-   */
   injectQuoteRequest(event: QuoteRequestEvent): void {
     this.onQuoteRequest(event);
   }
@@ -189,9 +171,50 @@ export class SolverRunner {
     this.count('quote_decision:quoted_live');
   }
 
+  /**
+   * Match settlement → pending quote → release reservation → attribute PnL.
+   * Unmatched settlements are counted, never invent fill economics.
+   */
   private onSettlement(event: SettlementEvent): void {
     this.count('settlement:observed');
-    void event;
+    const matched = this.pendingQuotes.take(event.quoteId);
+    if (!matched) {
+      this.count('settlement:unmatched');
+      return;
+    }
+
+    this.inventory.release(matched.quoteId);
+    this.count('settlement:matched');
+
+    // Apply inventory movement as if fill completed (in → out).
+    try {
+      this.opts.baseInventory.deposit(matched.assetIn, matched.amountInRaw, `settle:${event.quoteId}`);
+      this.opts.baseInventory.withdraw(
+        matched.assetOut,
+        matched.amountOutRaw,
+        `settle:${event.quoteId}`
+      );
+    } catch {
+      this.count('settlement:inventory_error');
+      this.opts.riskGuard.tripKillSwitch('settlement_inventory_error');
+      return;
+    }
+
+    const edge = realizedEdgeUsd({
+      assetIn: matched.assetIn,
+      amountInRaw: matched.amountInRaw,
+      decimalsIn: this.opts.registry.get(matched.assetIn)?.decimals ?? 0n,
+      assetOut: matched.assetOut,
+      amountOutRaw: matched.amountOutRaw,
+      decimalsOut: this.opts.registry.get(matched.assetOut)?.decimals ?? 0n,
+      usdPrice: (asset) => this.opts.priceSource.usdPrice(asset),
+    });
+    if (edge === null) {
+      this.count('settlement:unpriceable_pnl');
+      return;
+    }
+    this.opts.riskGuard.recordRealizedPnlUsd(edge);
+    this.count('settlement:pnl_recorded');
   }
 }
 

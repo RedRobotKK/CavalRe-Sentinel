@@ -1,12 +1,5 @@
 /**
  * OPERATOR STATUS REPORT (X15)
- *
- * The operator is the user; this text block is the product's face.
- * Design rules (product designer, ratified by SRE):
- *  - A tripped kill switch is the FIRST line. Nothing matters more.
- *  - The mode (DRY-RUN vs LIVE) is unmissable and precedes all numbers.
- *  - Amounts are human units, decisions are grouped by reason, and a
- *    bleeding journal is a loud warning, not a footnote.
  */
 
 import * as FloatLib from '@cavalre/floatlib-ts';
@@ -20,8 +13,14 @@ export interface StatusReportInput {
   inventoryLines: { symbol: string; availableRaw: bigint; decimals: bigint }[];
   activeReservations: number;
   journalDropped: number;
-  /** X17: distinguishes "connected but quiet" from "not connected at all". */
-  relay?: { framesReceived: number; malformedFrames: number; reconnects: number };
+  relay?: {
+    framesReceived: number;
+    malformedFrames: number;
+    reconnects: number;
+    /** none = no PARTNER_JWT; bearer = header configured (not proof of frames). */
+    auth?: 'none' | 'bearer';
+  };
+  risk?: { killSwitch: string | null; dailyPnlUsd: number };
 }
 
 export function formatStatusReport(input: StatusReportInput): string {
@@ -32,7 +31,9 @@ export function formatStatusReport(input: StatusReportInput): string {
   }
 
   const mode = input.dryRun ? 'DRY-RUN (nothing is sent)' : 'LIVE';
-  lines.push(`mode: ${mode} | uptime ${formatDuration(input.uptimeMs)} | reservations: ${input.activeReservations}`);
+  lines.push(
+    `mode: ${mode} | uptime ${formatDuration(input.uptimeMs)} | reservations: ${input.activeReservations}`
+  );
 
   const inventory = input.inventoryLines
     .map((l) => `${l.symbol} ${formatAmount(l.availableRaw, l.decimals)}`)
@@ -41,15 +42,25 @@ export function formatStatusReport(input: StatusReportInput): string {
 
   if (input.relay) {
     const r = input.relay;
-    const health =
-      r.framesReceived === 0
-        ? r.reconnects > 0
-          ? '⚠ NO FRAMES EVER — connection failing (check API key / network)'
-          : '⚠ NO FRAMES YET — connected but nothing received (bus may require API key)'
-        : 'receiving';
+    const auth = r.auth ?? 'none';
+    let health: string;
+    if (auth === 'none') {
+      health = 'WAITING ON PARTNER_JWT — portal/KYC external gate; cover ≠ bus';
+    } else if (r.framesReceived === 0) {
+      health =
+        r.reconnects > 0
+          ? '⚠ auth set but NO FRAMES — check JWT validity / network'
+          : 'auth set · waiting for first quote frame';
+    } else {
+      health = 'receiving residual';
+    }
     lines.push(
-      `bus: ${r.framesReceived} frames | ${r.reconnects} reconnects | ${r.malformedFrames} malformed — ${health}`
+      `bus: ${r.framesReceived} frames | auth=${auth} | ${r.reconnects} reconnects | ${r.malformedFrames} malformed — ${health}`
     );
+  }
+
+  if (input.risk) {
+    lines.push(`pnl_day_usd: ${input.risk.dailyPnlUsd.toFixed(4)} (settlement-attributed only)`);
   }
 
   const counterKeys = Object.keys(input.counters).sort();
@@ -64,7 +75,9 @@ export function formatStatusReport(input: StatusReportInput): string {
   }
 
   if (input.journalDropped > 0) {
-    lines.push(`⚠ JOURNAL: ${input.journalDropped} entries dropped — the tape is bleeding, fix the sink`);
+    lines.push(
+      `⚠ JOURNAL: ${input.journalDropped} entries dropped — the tape is bleeding, fix the sink`
+    );
   }
 
   return lines.join('\n');

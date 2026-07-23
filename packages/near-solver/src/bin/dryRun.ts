@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 /**
- * DRY-RUN ENTRYPOINT — thin shell over assembleSolver() (X13).
+ * DRY-RUN ENTRYPOINT
  *
  *   npm run solver:dry-run
- *   npm run solver:dry-run -- --sim          # random market-average intents
- *   npm run solver:dry-run -- --sim --cover  # rotate full internal footprint
+ *   npm run solver:dry-run -- --sim
+ *   npm run solver:dry-run -- --sim --cover
  *
- * Env: JOURNAL_DIR, STATUS_EVERY, DASHBOARD_PORT, DASHBOARD_RECLAIM,
+ * Env: PARTNER_JWT (Bearer for bus), JOURNAL_DIR, STATUS_EVERY, DASHBOARD_PORT,
  *      SIM_INTERVAL_MS, SIM_SEED
  */
 
@@ -19,6 +19,7 @@ import { createIntentSimulator, DEFAULT_AVERAGES } from '../sim/intentSim.js';
 import { MapPriceSource } from '../sim/mapPriceSource.js';
 import { createCoverageRotator } from '../sim/coverage.js';
 import { SolverPipeline } from '../solver.js';
+import { authorizationFromEnv } from '../wsTransport.js';
 
 const argv = process.argv.slice(2);
 const simMode = argv.includes('--sim') || process.env['SIM_INTENTS'] === '1';
@@ -35,6 +36,7 @@ const simSeed = Number(process.env['SIM_SEED'] ?? '42');
 reclaimListenPort(dashboardPort);
 
 const ring = ringSink(JOURNAL_RING_CAPACITY);
+const auth = authorizationFromEnv();
 
 const app = assembleSolver({
   registry: MAINNET_REGISTRY,
@@ -57,13 +59,17 @@ const dashboard = await createStatusServer({
 console.log(`CavalRe Near Solver — DRY-RUN against ${MAINNET.solverRelayWsUrl}`);
 console.log(`journal:   ${journalDir}/decisions-YYYY-MM-DD.jsonl`);
 console.log(`dashboard: http://127.0.0.1:${dashboard.port}  (read-only, localhost only)`);
+console.log(
+  `bus auth:  ${auth ? 'PARTNER_JWT present (Bearer handshake)' : 'NONE — waiting on portal/KYC; frames will stay 0'}`
+);
 if (simMode && coverMode) {
-  console.log(`sim:       COVERAGE · full footprint rotation every ${simIntervalMs}ms\n`);
+  console.log(`sim:       COVERAGE · every ${simIntervalMs}ms (not residual)`);
 } else if (simMode) {
-  console.log(`sim:       random mids · seed=${simSeed} · ${simIntervalMs}ms · Tier A\n`);
+  console.log(`sim:       random · seed=${simSeed} · ${simIntervalMs}ms (not residual)`);
 } else {
-  console.log(`sim:       off · --sim [--cover] for internal traffic\n`);
+  console.log(`sim:       off · residual only (requires PARTNER_JWT for frames)`);
 }
+console.log('');
 
 app.runner.start();
 const priceLoop = setInterval(() => void app.refreshPrices(), PRICE_REFRESH_MS);
