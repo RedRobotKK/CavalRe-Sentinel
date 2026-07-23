@@ -1,5 +1,5 @@
 /**
- * NEAR SOLVER DESK — bars + funnel + particle-math hero.
+ * NEAR SOLVER DESK — circuit-breaker pipeline hero + bars + funnel.
  */
 
 export const DASHBOARD_HTML = /* html */ `<!doctype html>
@@ -10,72 +10,74 @@ export const DASHBOARD_HTML = /* html */ `<!doctype html>
 <title>NEAR SOLVER DESK · CavalRe</title>
 <style>
 :root{
-  --bg:#0b0f12;--panel:#12181c;--line:#1c262c;--border:#2a363c;
-  --text:#e6edf0;--muted:#7a8b94;--cyan:#2dd4bf;--warn:#eab308;--bad:#f43f5e;
+  --bg:#07090c;--panel:#0e1318;--line:#1a2228;
+  --text:#e8eef0;--muted:#6b7c86;--cyan:#2dd4bf;--amber:#f5a623;--bad:#f43f5e;
   --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
   --sans:system-ui,-apple-system,"Segoe UI",sans-serif;
 }
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font:13px/1.4 var(--sans);overflow:hidden}
-.shell{height:100%;display:grid;grid-template-rows:48px 1fr 140px;gap:0}
-header{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#0e1316}
-.logo{width:28px;height:28px;background:var(--cyan);color:#042;display:grid;place-items:center;font:700 11px var(--mono);border-radius:4px}
-h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
-.badge{font:600 10px var(--mono);padding:3px 8px;border-radius:3px;text-transform:uppercase}
-.badge.dry{background:#422006;color:#fbbf24}.badge.live{background:#064e3b;color:#5eead4}
-.right{margin-left:auto;font:12px var(--mono);color:var(--muted)}.right b{color:var(--text)}
-#kill{display:none;background:#4c0519;color:#fda4af;padding:8px 16px;font:600 12px var(--mono)}
+.shell{height:100%;display:grid;grid-template-rows:44px 1fr 130px;gap:0}
+header{display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid var(--line);background:#0a0e12}
+.logo{width:26px;height:26px;background:var(--amber);color:#1a0a00;display:grid;place-items:center;font:700 10px var(--mono);border-radius:3px}
+h1{font:600 13px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size:11px;margin-left:6px}
+.badge{font:600 9px var(--mono);padding:2px 7px;border-radius:3px;text-transform:uppercase}
+.badge.dry{background:#3d2a00;color:#f5a623}.badge.live{background:#064e3b;color:#5eead4}
+.right{margin-left:auto;font:11px var(--mono);color:var(--muted)}.right b{color:var(--text)}
+#kill{display:none;background:#4c0519;color:#fda4af;padding:6px 14px;font:600 12px var(--mono)}
 #kill.on{display:block}
-.main{display:grid;grid-template-columns:1fr 1.4fr 1fr;gap:12px;padding:12px 16px;min-height:0;overflow:hidden}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:12px 14px;min-height:0;display:flex;flex-direction:column}
-.card h2{font:600 11px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:8px}
-.muted{color:var(--muted);font-size:12px;margin-bottom:8px}
-.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line);font:12px var(--mono)}
-.kv:last-child{border:0}.kv .k{color:var(--muted)}.kv .v.warn{color:var(--warn)}.kv .v.ok{color:var(--cyan)}.kv .v.bad{color:var(--bad)}
-.bars{flex:1;overflow:auto;display:flex;flex-direction:column;gap:6px}
-.bar-row{display:grid;grid-template-columns:96px 1fr 28px;gap:6px;align-items:center;font:11px var(--mono)}
-.bar-row .label{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar-track{height:12px;background:#0a0e11;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
-.bar-fill{height:100%;min-width:2px;transition:width .3s ease}.bar-fill.quote{background:var(--cyan)}.bar-fill.reject{background:var(--warn)}
-.bar-n{text-align:right;font-weight:600}
+.main{display:grid;grid-template-columns:240px 1fr 240px;gap:10px;padding:10px 12px;min-height:0;overflow:hidden}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:4px;padding:10px 12px;min-height:0;display:flex;flex-direction:column}
+.card h2{font:600 10px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px}
+.muted{color:var(--muted);font-size:11px;margin-bottom:8px}
+.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid var(--line);font:11px var(--mono)}
+.kv:last-child{border:0}.kv .k{color:var(--muted)}.kv .v.warn{color:var(--amber)}.kv .v.ok{color:var(--cyan)}.kv .v.bad{color:var(--bad)}
+.bars{flex:1;overflow:auto;display:flex;flex-direction:column;gap:5px}
+.bar-row{display:grid;grid-template-columns:88px 1fr 26px;gap:5px;align-items:center;font:11px var(--mono)}
+.bar-row .label{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:10px}
+.bar-track{height:11px;background:#080b0e;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;min-width:2px;transition:width .3s}.bar-fill.quote{background:var(--cyan)}.bar-fill.reject{background:var(--amber)}
+.bar-n{text-align:right;font-weight:600;font-size:11px}
 .funnel{display:flex;flex-direction:column;gap:4px}
-.funnel-step{display:grid;grid-template-columns:58px 1fr 32px;gap:6px;align-items:center}
+.funnel-step{display:grid;grid-template-columns:52px 1fr 28px;gap:5px;align-items:center}
 .funnel-step .name{font:600 10px var(--mono);color:var(--muted)}
-.funnel-step .track{height:18px;background:#0a0e11;border-radius:2px;border:1px solid var(--line);overflow:hidden}
-.funnel-step .fill{height:100%;background:linear-gradient(90deg,#0f766e,var(--cyan));transition:width .3s}
+.funnel-step .track{height:16px;background:#080b0e;border-radius:2px;border:1px solid var(--line);overflow:hidden}
+.funnel-step .fill{height:100%;background:linear-gradient(90deg,#7c4a00,var(--amber));transition:width .3s}
 .funnel-step .n{font:700 11px var(--mono);text-align:right}
-.funnel-step.active .name{color:var(--cyan)}
-.hero-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:8px}
-#hero{width:100%;flex:1;min-height:180px;background:#05080c;border:1px solid var(--line);border-radius:6px;display:block}
-.req-pair{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;background:#0a0e11;border:1px solid var(--line);border-radius:6px}
-.req-pair .sym{font:700 18px var(--sans)}.req-pair .arrow{color:var(--cyan)}
-.req-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font:11px var(--mono);color:var(--muted)}
+.funnel-step.active .name{color:var(--amber)}
+.hero-card{background:#06080b;border:1px solid var(--line);border-radius:4px;padding:0;min-height:0;display:flex;flex-direction:column;overflow:hidden}
+.hero-card h2{padding:10px 12px 0;margin:0}
+#hero{width:100%;flex:1;min-height:200px;display:block}
+.intent-bar{padding:8px 12px;border-top:1px solid var(--line);background:var(--panel)}
+.req-pair{display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:4px}
+.req-pair .sym{font:700 16px var(--sans)}.req-pair .arrow{color:var(--amber)}
+.req-meta{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;font:10px var(--mono);color:var(--muted)}
 .req-meta b{color:var(--text)}
 .gates{display:flex;flex-wrap:wrap;gap:4px;justify-content:center;align-items:center;margin-top:6px}
-.gate{font:600 9px var(--mono);padding:2px 6px;border-radius:3px;border:1px solid var(--border);color:var(--muted);text-transform:uppercase}
+.gate{font:600 9px var(--mono);padding:2px 6px;border-radius:2px;border:1px solid #2a3238;color:var(--muted);text-transform:uppercase}
 .gate.pass{color:var(--cyan);border-color:#115e59;background:#042f2e}
 .gate.fail{color:var(--bad);border-color:#9f1239;background:#4c0519}
-.gate.wait{color:var(--warn);border-color:#854d0e;background:#422006}
-.verdict{font:700 10px var(--mono);padding:3px 8px;border-radius:3px;text-transform:uppercase;border:1px solid}
+.gate.wait{color:var(--amber);border-color:#7c4a00;background:#3d2a00}
+.verdict{font:700 9px var(--mono);padding:2px 7px;border-radius:2px;text-transform:uppercase;border:1px solid}
 .verdict.q{color:var(--cyan);border-color:#115e59;background:#042f2e}
-.verdict.r{color:var(--warn);border-color:#854d0e;background:#422006}
+.verdict.r{color:var(--amber);border-color:#7c4a00;background:#3d2a00}
 .verdict.h{color:var(--bad);border-color:#9f1239;background:#4c0519}
-.tape-wrap{border-top:1px solid var(--line);background:var(--panel);padding:6px 16px;display:flex;flex-direction:column;min-height:0}
-.tape-wrap h2{font:600 11px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;display:flex;justify-content:space-between}
+.tape-wrap{border-top:1px solid var(--line);background:var(--panel);padding:6px 14px;display:flex;flex-direction:column;min-height:0}
+.tape-wrap h2{font:600 10px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:4px;display:flex;justify-content:space-between}
 .tape-wrap h2 span{font:11px var(--mono);font-weight:500;text-transform:none;letter-spacing:0}
-#stream{flex:1;overflow:auto;font:12px var(--mono)}
-.line{display:grid;grid-template-columns:52px 1fr auto auto;gap:8px;padding:2px 0;border-bottom:1px solid var(--line);align-items:center}
+#stream{flex:1;overflow:auto;font:11px var(--mono)}
+.line{display:grid;grid-template-columns:50px 1fr auto auto;gap:8px;padding:2px 0;border-bottom:1px solid var(--line);align-items:center}
 .line .t{color:var(--muted)}.line .pair{font-weight:600}
-.chip{font:700 9px var(--mono);padding:2px 5px;border-radius:3px;text-transform:uppercase}
-.chip.q{background:#042f2e;color:var(--cyan)}.chip.r{background:#422006;color:var(--warn)}.chip.h{background:#4c0519;color:var(--bad)}
-.empty{color:var(--muted);padding:10px;text-align:center}
+.chip{font:700 9px var(--mono);padding:1px 5px;border-radius:2px;text-transform:uppercase}
+.chip.q{background:#042f2e;color:var(--cyan)}.chip.r{background:#3d2a00;color:var(--amber)}.chip.h{background:#4c0519;color:var(--bad)}
+.empty{color:var(--muted);padding:8px;text-align:center}
 </style>
 </head>
 <body>
 <div class="shell">
   <header>
     <div class="logo">NS</div>
-    <h1>Near Solver Desk<span class="h1sub">CavalRe · dry-run ops</span></h1>
+    <h1>Near Solver Desk<span class="h1sub">CavalRe · circuit path</span></h1>
     <span id="mode" class="badge dry">…</span>
     <div class="right">uptime <b id="uptime">—</b> · <span id="clock">—</span></div>
   </header>
@@ -83,15 +85,12 @@ h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size
   <div class="main">
     <div class="card">
       <h2>Decision mix</h2>
-      <p class="muted">Bar length ∝ decide() count.</p>
       <div class="bars" id="bars"></div>
     </div>
-    <div class="card">
-      <h2>Particle pipeline</h2>
-      <div class="hero-wrap">
-        <canvas id="hero"></canvas>
-        <div id="intentCard"></div>
-      </div>
+    <div class="hero-card">
+      <h2>Circuit breaker · stages light as flow hits</h2>
+      <canvas id="hero"></canvas>
+      <div class="intent-bar" id="intentCard"></div>
     </div>
     <div class="card">
       <h2>Path funnel</h2>
@@ -112,17 +111,23 @@ h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 
-/* ============================================================
-   Particle system — flow field along stages + decide bursts
-   ============================================================ */
+/* Circuit-breaker pipeline */
 const canvas = $('hero');
 const ctx = canvas.getContext('2d');
-const STAGES = ['BUS', 'SEE', 'MARK', 'DECIDE', 'RISK', 'QUOTE'];
-const MAX_P = 420;
-const particles = [];
-let W = 0, H = 0, dpr = 1;
-let lastTs = 0;
-let burstUntil = 0;
+const STAGES = [
+  { id: 'BUS', key: 'bus' },
+  { id: 'SEE', key: 'see' },
+  { id: 'MARK', key: 'mark' },
+  { id: 'DECIDE', key: 'decide' },
+  { id: 'RISK', key: 'risk' },
+  { id: 'QUOTE', key: 'quote' },
+];
+let counts = { bus: 0, see: 0, mark: 0, decide: 0, risk: 0, quote: 0, drop: 0 };
+let stageHeat = STAGES.map(() => 0); // 0..1 edge glow
+const linkParticles = [];
+const MAX_LP = 280;
+let W = 0, H = 0, dpr = 1, lastTs = 0;
+let floatingTags = []; // {text, life, x, y}
 
 function resize() {
   const r = canvas.getBoundingClientRect();
@@ -135,103 +140,53 @@ function resize() {
 resize();
 addEventListener('resize', resize);
 
-function stageX(i) {
-  const pad = 36;
-  return pad + ((W - pad * 2) * i) / (STAGES.length - 1);
+function boxLayout() {
+  const n = STAGES.length;
+  const padX = 28;
+  const boxW = Math.min(78, (W - padX * 2) / n - 12);
+  const boxH = 64;
+  const gap = (W - padX * 2 - boxW * n) / (n - 1);
+  const y = H * 0.42 - boxH / 2;
+  return STAGES.map((_, i) => ({
+    x: padX + i * (boxW + gap),
+    y,
+    w: boxW,
+    h: boxH,
+    cx: padX + i * (boxW + gap) + boxW / 2,
+    cy: y + boxH / 2,
+  }));
 }
-function midY() { return H * 0.42; }
 
-function hash(n) {
-  const x = Math.sin(n * 127.1) * 43758.5453;
-  return x - Math.floor(x);
-}
-
-function makeParticle(kind, burst) {
-  // kind: 1 quote, 0 reject, 2 ambient
-  const stage = burst ? 0 : Math.floor(Math.random() * 2);
-  const x0 = stageX(stage) + (Math.random() - 0.5) * 20;
-  const y0 = midY() + (Math.random() - 0.5) * (burst ? 40 : 80);
-  return {
-    x: x0, y: y0,
-    vx: 40 + Math.random() * 50 + (burst ? 30 : 0),
-    vy: (Math.random() - 0.5) * (burst ? 60 : 20),
-    life: 1,
-    decay: burst ? 0.25 + Math.random() * 0.2 : 0.12 + Math.random() * 0.1,
-    r: burst ? 2.2 + Math.random() * 2.5 : 1.2 + Math.random() * 1.8,
-    kind,
-    trail: [],
+function spawnLink(from, to, ok) {
+  if (linkParticles.length >= MAX_LP) return;
+  linkParticles.push({
+    a: from, b: to, t: 0,
+    speed: 0.55 + Math.random() * 0.35,
+    ok,
+    amp: 8 + Math.random() * 14,
     phase: Math.random() * Math.PI * 2,
-    seed: Math.random() * 1000,
-  };
+  });
 }
 
-function emit(kind, n) {
-  for (let i = 0; i < n && particles.length < MAX_P; i++) {
-    particles.push(makeParticle(kind, true));
-  }
-  burstUntil = performance.now() + 400;
-}
-
-function ambientTick(dt) {
-  // continuous field density
-  const rate = 18; // particles / sec baseline
-  const n = Math.floor(rate * dt + Math.random());
-  for (let i = 0; i < n && particles.length < MAX_P * 0.7; i++) {
-    particles.push(makeParticle(2, false));
+function emitFlow(ok) {
+  // cascade packets across consecutive stages
+  for (let i = 0; i < STAGES.length - 1; i++) {
+    setTimeout(() => {
+      for (let k = 0; k < 3; k++) spawnLink(i, i + 1, ok);
+      stageHeat[i] = 1;
+      if (i === STAGES.length - 2) stageHeat[i + 1] = 1;
+    }, i * 70);
   }
 }
 
-function integrate(p, dt, t) {
-  // target along path: progress by x
-  const pad = 36;
-  const span = W - pad * 2;
-  const u = Math.max(0, Math.min(0.999, (p.x - pad) / span));
-  const si = Math.floor(u * (STAGES.length - 1));
-  const targetY = midY();
-
-  // attract to conduit + soft lateral noise (curl-ish)
-  const noise = Math.sin(p.seed + t * 2.1 + p.x * 0.02) * 28
-    + Math.cos(p.seed * 0.7 + t * 1.3) * 12;
-  const ay = (targetY + noise - p.y) * 3.5;
-  const ax = 8 + Math.sin(t + p.phase) * 4;
-
-  // stage wells: slight slowdown near nodes
-  const nodeX = stageX(si);
-  const dist = p.x - nodeX;
-  if (Math.abs(dist) < 24) {
-    p.vx *= 0.97;
-    p.vy += Math.sin(t * 6 + p.phase) * 15 * dt;
-  }
-
-  p.vx += ax * dt;
-  p.vy += ay * dt;
-  // damping
-  p.vx *= 0.992;
-  p.vy *= 0.96;
-  // clamp speed
-  const spd = Math.hypot(p.vx, p.vy);
-  const maxS = p.kind === 2 ? 90 : 140;
-  if (spd > maxS) {
-    p.vx = (p.vx / spd) * maxS;
-    p.vy = (p.vy / spd) * maxS;
-  }
-  p.x += p.vx * dt;
-  p.y += p.vy * dt;
-  p.life -= p.decay * dt;
-
-  // trail
-  p.trail.push({ x: p.x, y: p.y });
-  if (p.trail.length > 12) p.trail.shift();
-
-  // recycle past QUOTE
-  if (p.x > W - 20 || p.life <= 0) return false;
-  return true;
-}
-
-function colorFor(kind, a) {
-  if (kind === 1) return 'rgba(45,212,191,' + a + ')';
-  if (kind === 0) return 'rgba(234,179,8,' + a + ')';
-  return 'rgba(45,212,191,' + (a * 0.45) + ')';
+function drawRounded(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
 }
 
 function draw(ts) {
@@ -239,92 +194,186 @@ function draw(ts) {
   lastTs = ts;
   if (W < 10) { resize(); requestAnimationFrame(draw); return; }
 
-  ambientTick(dt);
-
-  // fade backdrop (motion blur feel)
-  ctx.fillStyle = 'rgba(5,8,12,0.22)';
+  // clear
+  ctx.fillStyle = '#06080b';
   ctx.fillRect(0, 0, W, H);
 
-  // grid
-  ctx.strokeStyle = 'rgba(45,212,191,0.04)';
+  // perspective grid floor
+  ctx.strokeStyle = 'rgba(245,166,35,0.06)';
   ctx.lineWidth = 1;
-  for (let x = 0; x < W; x += 20) {
-    ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
+  const horizon = H * 0.72;
+  for (let i = 0; i < 12; i++) {
+    const y = horizon + i * i * 1.8;
+    if (y > H) break;
+    ctx.beginPath();
+    ctx.moveTo(0, y);
+    ctx.lineTo(W, y);
+    ctx.stroke();
   }
-  for (let y = 0; y < H; y += 20) {
-    ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
+  for (let i = -10; i <= 10; i++) {
+    ctx.beginPath();
+    ctx.moveTo(W / 2 + i * 40, horizon);
+    ctx.lineTo(W / 2 + i * 90, H);
+    ctx.stroke();
   }
 
-  const my = midY();
-  // conduit glow
-  const g = ctx.createLinearGradient(0, my - 20, 0, my + 20);
-  g.addColorStop(0, 'rgba(45,212,191,0)');
-  g.addColorStop(0.5, 'rgba(45,212,191,0.08)');
-  g.addColorStop(1, 'rgba(45,212,191,0)');
-  ctx.fillStyle = g;
-  ctx.fillRect(20, my - 20, W - 40, 40);
-
-  ctx.strokeStyle = 'rgba(45,212,191,0.2)';
-  ctx.lineWidth = 2;
+  // orbital ring
+  ctx.strokeStyle = 'rgba(245,166,35,0.12)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
-  ctx.moveTo(36, my);
-  ctx.lineTo(W - 36, my);
+  ctx.ellipse(W / 2, H * 0.48, W * 0.42, H * 0.22, 0, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.ellipse(W / 2, H * 0.48, W * 0.32, H * 0.15, 0, 0, Math.PI * 2);
   ctx.stroke();
 
-  // stages
-  const burst = performance.now() < burstUntil;
-  for (let i = 0; i < STAGES.length; i++) {
-    const x = stageX(i);
-    const pulse = 0.5 + 0.5 * Math.sin(ts * 0.004 + i * 0.9);
-    const rad = 8 + pulse * 3 + (burst ? 2 : 0);
+  const boxes = boxLayout();
+
+  // decay heat
+  for (let i = 0; i < stageHeat.length; i++) {
+    stageHeat[i] = Math.max(0, stageHeat[i] - dt * 0.55);
+  }
+
+  // sine-link particles between boxes
+  for (let i = linkParticles.length - 1; i >= 0; i--) {
+    const p = linkParticles[i];
+    p.t += p.speed * dt;
+    if (p.t >= 1) { linkParticles.splice(i, 1); continue; }
+    const A = boxes[p.a], B = boxes[p.b];
+    const x = A.cx + (B.cx - A.cx) * p.t;
+    const baseY = A.cy + (B.cy - A.cy) * p.t;
+    const y = baseY + Math.sin(p.t * Math.PI * 2 + p.phase) * p.amp * Math.sin(p.t * Math.PI);
+    const a = Math.sin(p.t * Math.PI);
     ctx.beginPath();
-    ctx.arc(x, my, rad + 6, 0, Math.PI * 2);
-    ctx.fillStyle = 'rgba(45,212,191,' + (0.05 + pulse * 0.06) + ')';
+    ctx.arc(x, y, 2.2, 0, Math.PI * 2);
+    ctx.fillStyle = p.ok
+      ? 'rgba(45,212,191,' + (0.5 + a * 0.5) + ')'
+      : 'rgba(245,166,35,' + (0.5 + a * 0.5) + ')';
     ctx.fill();
+    // micro trail
+    ctx.fillStyle = p.ok ? 'rgba(45,212,191,0.15)' : 'rgba(245,166,35,0.15)';
     ctx.beginPath();
-    ctx.arc(x, my, rad, 0, Math.PI * 2);
-    ctx.strokeStyle = '#2dd4bf';
-    ctx.lineWidth = 2;
+    ctx.arc(x - 4, y, 1.2, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // idle trickle along conduit
+  if (Math.random() < 0.08) {
+    const i = Math.floor(Math.random() * (STAGES.length - 1));
+    spawnLink(i, i + 1, Math.random() > 0.35);
+  }
+
+  // stage boxes
+  const vals = [
+    counts.bus, counts.see, counts.mark, counts.decide, counts.risk, counts.quote,
+  ];
+  for (let i = 0; i < boxes.length; i++) {
+    const b = boxes[i];
+    const heat = stageHeat[i];
+    const live = vals[i] > 0;
+
+    // outer glow (circuit edge)
+    if (heat > 0.05 || live) {
+      ctx.shadowColor = 'rgba(245,166,35,' + (0.35 + heat * 0.55) + ')';
+      ctx.shadowBlur = 18 + heat * 22;
+    } else {
+      ctx.shadowBlur = 0;
+    }
+
+    // body
+    const grad = ctx.createLinearGradient(b.x, b.y, b.x, b.y + b.h);
+    if (heat > 0.3) {
+      grad.addColorStop(0, '#5a3a08');
+      grad.addColorStop(1, '#2a1800');
+    } else if (live) {
+      grad.addColorStop(0, '#3d2a00');
+      grad.addColorStop(1, '#1a1200');
+    } else {
+      grad.addColorStop(0, '#1a1610');
+      grad.addColorStop(1, '#0c0a08');
+    }
+    drawRounded(b.x, b.y, b.w, b.h, 4);
+    ctx.fillStyle = grad;
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // edge stroke — lights up
+    ctx.strokeStyle = heat > 0.1
+      ? 'rgba(245,166,35,' + (0.55 + heat * 0.45) + ')'
+      : live ? 'rgba(245,166,35,0.55)' : 'rgba(245,166,35,0.22)';
+    ctx.lineWidth = heat > 0.1 ? 2.2 : 1.2;
+    drawRounded(b.x, b.y, b.w, b.h, 4);
     ctx.stroke();
-    ctx.fillStyle = '#5a7a74';
+
+    // top highlight line
+    ctx.strokeStyle = 'rgba(255,200,80,' + (0.15 + heat * 0.4) + ')';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(b.x + 6, b.y + 1);
+    ctx.lineTo(b.x + b.w - 6, b.y + 1);
+    ctx.stroke();
+
+    // label
+    ctx.fillStyle = heat > 0.2 ? '#ffd27a' : '#c4892a';
+    ctx.font = '700 10px ui-monospace,monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(STAGES[i].id, b.cx, b.y + 18);
+
+    // count
+    ctx.fillStyle = '#ffe6b0';
+    ctx.font = '700 18px ui-monospace,monospace';
+    ctx.fillText(String(vals[i]), b.cx, b.y + 40);
+
+    // pass / drop tag
+    ctx.font = '600 8px ui-monospace,monospace';
+    if (i === 3 && counts.drop > 0) {
+      ctx.fillStyle = '#f43f5e';
+      ctx.fillText('DROP -' + counts.drop, b.cx, b.y + b.h - 8);
+    } else if (vals[i] > 0) {
+      ctx.fillStyle = 'rgba(45,212,191,0.7)';
+      ctx.fillText('PASS', b.cx, b.y + b.h - 8);
+    } else {
+      ctx.fillStyle = 'rgba(107,124,134,0.5)';
+      ctx.fillText('—', b.cx, b.y + b.h - 8);
+    }
+  }
+
+  // floating reject tags
+  for (let i = floatingTags.length - 1; i >= 0; i--) {
+    const t = floatingTags[i];
+    t.life -= dt;
+    t.y -= 12 * dt;
+    if (t.life <= 0) { floatingTags.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.min(1, t.life);
+    ctx.fillStyle = 'rgba(20,16,12,0.85)';
+    const tw = ctx.measureText(t.text).width + 14;
+    drawRounded(t.x - tw / 2, t.y - 10, tw, 18, 3);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(245,166,35,0.4)';
+    ctx.lineWidth = 1;
+    drawRounded(t.x - tw / 2, t.y - 10, tw, 18, 3);
+    ctx.stroke();
+    ctx.fillStyle = '#f5a623';
     ctx.font = '600 10px ui-monospace,monospace';
     ctx.textAlign = 'center';
-    ctx.fillText(STAGES[i], x, my + 26);
+    ctx.fillText(t.text, t.x, t.y + 3);
+    ctx.globalAlpha = 1;
   }
-
-  // particles
-  for (let i = particles.length - 1; i >= 0; i--) {
-    const p = particles[i];
-    if (!integrate(p, dt, ts * 0.001)) {
-      particles.splice(i, 1);
-      continue;
-    }
-    // trail
-    if (p.trail.length > 1) {
-      ctx.beginPath();
-      ctx.moveTo(p.trail[0].x, p.trail[0].y);
-      for (let t = 1; t < p.trail.length; t++) ctx.lineTo(p.trail[t].x, p.trail[t].y);
-      ctx.strokeStyle = colorFor(p.kind, 0.15 * p.life);
-      ctx.lineWidth = p.r * 0.8;
-      ctx.stroke();
-    }
-    ctx.beginPath();
-    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
-    ctx.fillStyle = colorFor(p.kind, Math.max(0.1, p.life));
-    ctx.fill();
-  }
-
-  // density readout
-  ctx.fillStyle = 'rgba(122,139,148,0.7)';
-  ctx.font = '10px ui-monospace,monospace';
-  ctx.textAlign = 'left';
-  ctx.fillText('n=' + particles.length, 10, H - 8);
 
   requestAnimationFrame(draw);
 }
 requestAnimationFrame(draw);
 
-let lastWould = 0, lastReject = 0;
+function pushTag(text) {
+  floatingTags.push({
+    text,
+    life: 3.2,
+    x: 80 + Math.random() * 40,
+    y: 40 + Math.random() * 30,
+  });
+}
+
+let lastWould = 0, lastReject = 0, lastSeen = 0;
 
 function fmtAmount(raw, decimals) {
   const v = BigInt(raw), d = BigInt(decimals), scale = 10n ** d;
@@ -353,7 +402,7 @@ function renderBars(counters) {
   const entries = Object.entries(counters || {})
     .map(([k, v]) => [k.replace(/^quote_decision:/, ''), v])
     .sort((a, b) => b[1] - a[1]);
-  if (!entries.length) { $('bars').innerHTML = '<div class="empty">No decisions yet</div>'; return; }
+  if (!entries.length) { $('bars').innerHTML = '<div class="empty">—</div>'; return; }
   const max = Math.max(...entries.map(([, v]) => v), 1);
   $('bars').innerHTML = entries.map(([k, v]) => {
     const pct = Math.round((v / max) * 100);
@@ -410,6 +459,7 @@ function fromJournal(e, dry) {
       risk: /kill|daily_loss|notional|below_min/.test(d.reason || '') ? 'fail' : (ok ? 'pass' : 'wait'),
     },
     ok, verdict: ok ? (dry ? 'Would quote' : 'Quoted') : (d.reason || 'Reject'), sample: false,
+    reason: d.reason,
   };
 }
 
@@ -441,11 +491,28 @@ function render(s, journal) {
   renderBars(c);
   const would = Object.entries(c).filter(([k]) => /would_quote|quoted/.test(k)).reduce((a, [, v]) => a + v, 0);
   const rejects = Object.entries(c).filter(([k]) => k.startsWith('quote_decision:') && !/would_quote|quoted/.test(k)).reduce((a, [, v]) => a + v, 0);
-  renderFunnel(would + rejects, rejects, would, frames);
+  const seen = would + rejects;
+  renderFunnel(seen, rejects, would, frames);
 
-  if (would > lastWould) emit(1, Math.min(40, 12 * (would - lastWould)));
-  if (rejects > lastReject) emit(0, Math.min(40, 12 * (rejects - lastReject)));
-  lastWould = would; lastReject = rejects;
+  // drive circuit counts (sim path through stages)
+  counts.bus = frames || seen;
+  counts.see = seen;
+  counts.mark = seen;
+  counts.decide = seen;
+  counts.risk = seen;
+  counts.quote = would;
+  counts.drop = rejects;
+
+  if (would > lastWould) emitFlow(true);
+  if (rejects > lastReject) {
+    emitFlow(false);
+    // tag last reject reason from counters
+    const top = Object.entries(c)
+      .filter(([k]) => k.startsWith('quote_decision:') && !/would_quote|quoted/.test(k))
+      .sort((a, b) => b[1] - a[1])[0];
+    if (top) pushTag(top[0].replace(/^quote_decision:/, ''));
+  }
+  lastWould = would; lastReject = rejects; lastSeen = seen;
 
   const j = journal || [];
   let card = null;
@@ -458,7 +525,7 @@ function render(s, journal) {
     $('intentCard').innerHTML = renderIntent(SAMPLE);
   }
 
-  const rows = j.slice(-30).reverse().map(e => {
+  const rows = j.slice(-28).reverse().map(e => {
     if (e.type !== 'quote_decision') return '';
     const d = e.decision, ev = e.event;
     const pair = symOf(ev.assetIn) + ' → ' + symOf(ev.assetOut);
