@@ -1,11 +1,5 @@
 /**
  * INTENT REGISTER — lifecycle + inventory transitions + transactional outbox.
- *
- * Rules:
- *  - Illegal transitions throw / return err (never silent coerce)
- *  - Inventory moves only inside successful transitions
- *  - Wire payloads go to outbox in the same synchronous "tx" as state change
- *  - Idempotent: same key + same fingerprint → noop success
  */
 
 import type { QuoteRequestEvent } from './codec.js';
@@ -38,7 +32,6 @@ export interface IntentRecord {
   quote_hash: string | null;
   intent_hash: string | null;
   tx_hash: string | null;
-
   asset_in: string;
   asset_out: string;
   side: 'exact_in' | 'exact_out';
@@ -46,7 +39,6 @@ export interface IntentRecord {
   amount_out_raw: string | null;
   min_deadline_ms: number;
   request_fingerprint: string;
-
   state: IntentState;
   decided_at_ms: number | null;
   should_quote: boolean | null;
@@ -55,18 +47,14 @@ export interface IntentRecord {
   quote_amount_out_raw: string | null;
   total_spread_bps: number | null;
   deadline_iso: string | null;
-
   reserved: boolean;
   reserve_asset: string | null;
   reserve_amount_raw: string | null;
   reserve_expires_at_ms: number | null;
-
   sent_at_ms: number | null;
   signer_id: string | null;
-
   terminal_at_ms: number | null;
   terminal_reason: TerminalReason;
-
   source: IntentSource;
   mode: IntentMode;
   schema_version: 1;
@@ -110,8 +98,8 @@ export interface IntentRegisterOptions {
 
 export class IntentRegister {
   private readonly byId = new Map<string, IntentRecord>();
-  private readonly byHash = new Map<string, string>(); // quote_hash → quote_id
-  private readonly appliedFills = new Set<string>(); // tx_hash or quote_id
+  private readonly byHash = new Map<string, string>();
+  private readonly appliedFills = new Set<string>();
   readonly outbox: Outbox;
   private readonly inventory: ReservingInventory;
   private readonly now: () => number;
@@ -122,7 +110,6 @@ export class IntentRegister {
 
   constructor(opts: IntentRegisterOptions) {
     this.inventory = opts.inventory;
-    // exactOptionalPropertyTypes: do not pass now: undefined
     this.outbox =
       opts.outbox ??
       (opts.now !== undefined ? new Outbox({ now: opts.now }) : new Outbox());
@@ -142,7 +129,21 @@ export class IntentRegister {
     return id ? this.byId.get(id) : undefined;
   }
 
-  /** Observe a quote request (idempotent on fingerprint). */
+  /** Counts per lifecycle state — for status / ops. */
+  countsByState(): Record<IntentState, number> {
+    const c: Record<IntentState, number> = {
+      seen: 0,
+      decided_reject: 0,
+      reserved: 0,
+      sent: 0,
+      settled: 0,
+      expired: 0,
+      released: 0,
+    };
+    for (const r of this.byId.values()) c[r.state] += 1;
+    return c;
+  }
+
   observe(
     event: QuoteRequestEvent,
     meta?: { source?: IntentSource }
@@ -196,10 +197,6 @@ export class IntentRegister {
     return { ok: true, outcome: 'applied', record: clone(record) };
   }
 
-  /**
-   * Apply decide outcome. Accept → reserve (inventory) atomically with state.
-   * Reject → decided_reject, no inventory.
-   */
   applyDecision(quoteId: string, decision: QuoteDecision): TransitionResult {
     const r = this.byId.get(quoteId);
     if (!r) return { ok: false, err: 'not_found', detail: quoteId };
@@ -271,10 +268,6 @@ export class IntentRegister {
     return { ok: true, outcome: 'applied', record: clone(r) };
   }
 
-  /**
-   * Live only: enqueue signed quote_response frame + mark sent with quote_hash.
-   * Same synchronous tx: state + outbox row.
-   */
   markSent(
     quoteId: string,
     params: { quoteHash: string; framePayload: string; signerId: string }
@@ -309,10 +302,6 @@ export class IntentRegister {
     return { ok: true, outcome: 'applied', record: clone(r) };
   }
 
-  /**
-   * Settlement attribution. Prefer resolve via quote_hash.
-   * Ledger fill at most once per tx_hash.
-   */
   markSettled(
     ref: { quoteHash?: string; quoteId?: string },
     settlement: { intentHash: string; txHash: string },
@@ -385,7 +374,6 @@ export class IntentRegister {
     return { ok: true, outcome: 'applied', record: clone(r) };
   }
 
-  /** Expire all reserved/sent past deadline + grace. */
   sweepExpired(): IntentRecord[] {
     const t = this.now();
     const done: IntentRecord[] = [];

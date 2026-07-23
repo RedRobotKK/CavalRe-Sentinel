@@ -1,7 +1,5 @@
 /**
  * COMPOSITION ROOT (X13)
- *
- * assembleSolver() is the ONE call that turns the library into a product.
  */
 
 import type { KeyObject } from 'node:crypto';
@@ -38,7 +36,6 @@ export interface AssembleOptions {
   transportFactory?: TransportFactory;
   journalSink?: JournalSink;
   now?: () => number;
-  /** Override env; tests inject. */
   partnerAuthorization?: string;
 }
 
@@ -51,7 +48,6 @@ export interface AssembledSolver {
   refreshPrices: () => Promise<void>;
   statusReport: () => string;
   statusSnapshot: () => import('./status.js').StatusReportInput;
-  /** Whether PARTNER_JWT (or inject) is present — not proof of frames. */
   relayAuth: 'none' | 'bearer';
 }
 
@@ -157,6 +153,10 @@ export function assembleSolver(options: AssembleOptions): AssembledSolver {
       auth: relayAuth,
     },
     risk: riskGuard.state,
+    register: {
+      counts: runner.register.countsByState(),
+      outboxPending: runner.register.pendingOutbox(),
+    },
   });
 
   return {

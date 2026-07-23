@@ -4,6 +4,7 @@
 
 import * as FloatLib from '@cavalre/floatlib-ts';
 import { rawToFloat } from './pricing.js';
+import type { IntentState } from './intentRegister.js';
 
 export interface StatusReportInput {
   dryRun: boolean;
@@ -17,10 +18,14 @@ export interface StatusReportInput {
     framesReceived: number;
     malformedFrames: number;
     reconnects: number;
-    /** none = no PARTNER_JWT; bearer = header configured (not proof of frames). */
     auth?: 'none' | 'bearer';
   };
   risk?: { killSwitch: string | null; dailyPnlUsd: number };
+  /** IntentRegister lifecycle histogram (optional). */
+  register?: {
+    counts: Partial<Record<IntentState, number>>;
+    outboxPending: number;
+  };
 }
 
 export function formatStatusReport(input: StatusReportInput): string {
@@ -56,6 +61,13 @@ export function formatStatusReport(input: StatusReportInput): string {
     }
     lines.push(
       `bus: ${r.framesReceived} frames | auth=${auth} | ${r.reconnects} reconnects | ${r.malformedFrames} malformed — ${health}`
+    );
+  }
+
+  if (input.register) {
+    const c = input.register.counts;
+    lines.push(
+      `register: reserved=${c.reserved ?? 0} sent=${c.sent ?? 0} settled=${c.settled ?? 0} reject=${c.decided_reject ?? 0} expired=${c.expired ?? 0} | outbox_pending=${input.register.outboxPending}`
     );
   }
 
