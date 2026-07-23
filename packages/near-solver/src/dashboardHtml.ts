@@ -1,5 +1,5 @@
 /**
- * Desk shell only. Client logic is /desk.js (dashboardClient.ts).
+ * Desk shell — restrained, data-first.
  */
 
 export const DASHBOARD_HTML = `<!DOCTYPE html>
@@ -9,74 +9,140 @@ export const DASHBOARD_HTML = `<!DOCTYPE html>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
 <title>NEAR SOLVER DESK</title>
 <style>
-html,body{height:100%;margin:0;background:#07090c;color:#e8eef0;font:13px/1.4 system-ui,sans-serif;overflow:hidden}
-.shell{height:100%;display:grid;grid-template-rows:44px 1fr 110px}
-header{display:flex;align-items:center;gap:10px;padding:0 14px;border-bottom:1px solid #1a2228;background:#0a0e12}
-.logo{width:26px;height:26px;background:#f5a623;color:#1a0a00;display:grid;place-items:center;font:700 10px ui-monospace,monospace;border-radius:3px}
-h1{font:600 13px system-ui;margin:0}.sub{color:#6b7c86;font-weight:400;font-size:11px;margin-left:6px}
-.badge{font:600 9px ui-monospace,monospace;padding:2px 7px;border-radius:3px;text-transform:uppercase;background:#3d2a00;color:#f5a623}
-.right{margin-left:auto;font:11px ui-monospace,monospace;color:#6b7c86}.right b{color:#e8eef0}
-.main{display:grid;grid-template-columns:210px 1fr 210px;gap:10px;padding:10px;min-height:0}
-.card{background:#0e1318;border:1px solid #1a2228;border-radius:4px;padding:10px;overflow:auto}
-.card h2{font:600 10px system-ui;color:#6b7c86;text-transform:uppercase;letter-spacing:.06em;margin:0 0 8px}
-.hero{background:#05070a;border:1px solid #1a2228;border-radius:4px;display:flex;flex-direction:column;min-height:0;overflow:hidden}
-.hero h2{font:600 10px system-ui;color:#6b7c86;text-transform:uppercase;letter-spacing:.06em;margin:0;padding:8px 12px 0}
-.stage{position:relative;flex:1;min-height:240px}
-#c{position:absolute;inset:0;width:100%;height:100%;display:block;background:#05070a}
-.intent{padding:8px 12px;border-top:1px solid #1a2228;background:#0e1318;font:12px ui-monospace,monospace;text-align:center}
-.kv{display:flex;justify-content:space-between;padding:3px 0;border-bottom:1px solid #1a2228;font:11px ui-monospace,monospace}
-.kv span:first-child{color:#6b7c86}
-.bar{display:grid;grid-template-columns:80px 1fr 28px;gap:6px;align-items:center;margin-bottom:5px;font:11px ui-monospace,monospace}
-.bar .l{color:#6b7c86;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.bar .t{height:11px;background:#080b0e;border:1px solid #1a2228;border-radius:2px;overflow:hidden}
-.bar .f{height:100%;background:#f5a623}.bar .f.q{background:#2dd4bf}
-.bar .n{text-align:right;font-weight:600}
-.fun .row{display:grid;grid-template-columns:48px 1fr 28px;gap:5px;align-items:center;margin-bottom:4px;font:11px ui-monospace,monospace}
-.fun .row .nm{color:#6b7c86;font-weight:600}
-.fun .row .tk{height:14px;background:#080b0e;border:1px solid #1a2228;border-radius:2px;overflow:hidden}
-.fun .row .fl{height:100%;background:linear-gradient(90deg,#7c4a00,#f5a623)}
-.tape{border-top:1px solid #1a2228;background:#0e1318;padding:6px 14px;overflow:auto;font:11px ui-monospace,monospace}
-.tape h2{font:600 10px system-ui;color:#6b7c86;text-transform:uppercase;margin:0 0 4px;display:flex;justify-content:space-between}
-.line{display:grid;grid-template-columns:48px 1fr auto;gap:8px;padding:2px 0;border-bottom:1px solid #1a2228}
-.line .t{color:#6b7c86}
-.chip{font:700 9px ui-monospace,monospace;padding:1px 5px;border-radius:2px;text-transform:uppercase;background:#3d2a00;color:#f5a623}
-.chip.q{background:#042f2e;color:#2dd4bf}
-.muted{color:#6b7c86}
-.gate{display:inline-block;font:600 9px ui-monospace,monospace;padding:2px 6px;margin:2px;border:1px solid #2a3238;border-radius:2px;color:#6b7c86;text-transform:uppercase}
-.gate.pass{color:#2dd4bf;border-color:#115e59;background:#042f2e}
-.gate.fail{color:#f43f5e;border-color:#9f1239;background:#4c0519}
-.gate.wait{color:#f5a623;border-color:#7c4a00;background:#3d2a00}
+:root{
+  --bg:#0a0a0b;
+  --surface:#121214;
+  --line:rgba(255,255,255,0.06);
+  --text:#f5f5f7;
+  --muted:#86868b;
+  --amber:#f5a623;
+  --cyan:#32d4c8;
+  --bad:#ff453a;
+  --mono:ui-monospace,SFMono-Regular,Menlo,monospace;
+  --sans:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font:13px/1.45 var(--sans);overflow:hidden;-webkit-font-smoothing:antialiased}
+.shell{height:100%;display:grid;grid-template-rows:52px 1fr 132px}
+header{display:flex;align-items:center;gap:12px;padding:0 20px;border-bottom:1px solid var(--line)}
+.mark{width:22px;height:22px;border-radius:5px;background:var(--amber);color:#1a0a00;display:grid;place-items:center;font:700 9px var(--mono)}
+h1{font:600 14px/1 var(--sans);letter-spacing:-0.01em}
+.hsub{color:var(--muted);font-weight:400;font-size:12px;margin-left:8px}
+.badge{font:600 10px var(--mono);padding:3px 8px;border-radius:100px;background:rgba(245,166,35,0.12);color:var(--amber);letter-spacing:0.04em}
+.right{margin-left:auto;font:12px var(--mono);color:var(--muted)}.right b{color:var(--text);font-weight:500}
+.main{display:grid;grid-template-columns:220px 1fr 220px;gap:1px;background:var(--line);min-height:0}
+.panel{background:var(--bg);padding:20px 18px;overflow:auto}
+.panel h2{font:600 11px var(--sans);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:16px}
+.hero{background:var(--bg);display:flex;flex-direction:column;min-height:0;position:relative}
+.hero-inner{flex:1;display:flex;flex-direction:column;justify-content:center;padding:28px 32px 12px;min-height:0}
+.stages{display:flex;align-items:center;justify-content:center;gap:0;position:relative;z-index:2}
+.stage{width:88px;text-align:center;position:relative}
+.stage-box{
+  background:var(--surface);
+  border:1px solid var(--line);
+  border-radius:12px;
+  padding:14px 8px 12px;
+  transition:border-color .25s, box-shadow .25s, background .25s;
+}
+.stage-box.hot{
+  border-color:rgba(245,166,35,0.45);
+  box-shadow:0 0 0 1px rgba(245,166,35,0.15), 0 8px 32px rgba(245,166,35,0.08);
+  background:#16140f;
+}
+.stage-box.live{border-color:rgba(245,166,35,0.22)}
+.stage-name{font:600 10px var(--mono);color:var(--muted);letter-spacing:0.06em;margin-bottom:6px}
+.stage-box.hot .stage-name,.stage-box.live .stage-name{color:var(--amber)}
+.stage-n{font:600 22px/1 var(--sans);letter-spacing:-0.03em;color:var(--text)}
+.stage-flag{font:600 9px var(--mono);margin-top:8px;color:var(--muted);letter-spacing:0.04em}
+.stage-flag.pass{color:var(--cyan)}
+.stage-flag.drop{color:var(--bad)}
+.connector{width:28px;height:1px;background:var(--line);position:relative;flex-shrink:0}
+.connector .dot{
+  position:absolute;top:50%;left:0;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;
+  background:var(--amber);opacity:0;transform:translateX(0);
+}
+.connector .dot.run{animation:flow 0.7s ease-in-out forwards}
+@keyframes flow{
+  0%{opacity:0;transform:translateX(0)}
+  20%{opacity:1}
+  80%{opacity:1}
+  100%{opacity:0;transform:translateX(28px)}
+}
+.intent{
+  margin-top:36px;
+  text-align:center;
+  padding:0 20px;
+}
+.intent-pair{font:600 28px/1.1 var(--sans);letter-spacing:-0.03em;margin-bottom:8px}
+.intent-meta{font:13px var(--sans);color:var(--muted);margin-bottom:14px}
+.intent-meta b{color:var(--text);font-weight:500}
+.gates{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.gate{
+  font:600 10px var(--mono);padding:4px 10px;border-radius:100px;
+  border:1px solid var(--line);color:var(--muted);letter-spacing:0.03em;
+}
+.gate.pass{color:var(--cyan);border-color:rgba(50,212,200,0.25);background:rgba(50,212,200,0.06)}
+.gate.fail{color:var(--bad);border-color:rgba(255,69,58,0.3);background:rgba(255,69,58,0.08)}
+.gate.wait{color:var(--amber);border-color:rgba(245,166,35,0.25);background:rgba(245,166,35,0.06)}
+.bar{display:grid;grid-template-columns:1fr 36px;gap:8px;align-items:center;margin-bottom:10px}
+.bar .label{font:12px var(--sans);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bar .row{display:flex;align-items:center;gap:8px}
+.bar .track{flex:1;height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.bar .fill{height:100%;border-radius:2px;background:var(--amber)}
+.bar .fill.q{background:var(--cyan)}
+.bar .n{font:600 12px var(--mono);text-align:right;color:var(--text)}
+.kv{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);font:12px var(--sans)}
+.kv:last-child{border:0}
+.kv .k{color:var(--muted)}
+.kv .v{font:500 12px var(--mono)}
+.kv .v.warn{color:var(--amber)}
+.fun-row{display:grid;grid-template-columns:52px 1fr 28px;gap:8px;align-items:center;margin-bottom:10px}
+.fun-row .nm{font:600 11px var(--mono);color:var(--muted)}
+.fun-row .tk{height:3px;background:rgba(255,255,255,0.06);border-radius:2px;overflow:hidden}
+.fun-row .fl{height:100%;background:var(--amber);border-radius:2px}
+.fun-row .n{font:600 12px var(--mono);text-align:right}
+.tape{border-top:1px solid var(--line);padding:12px 20px;overflow:auto}
+.tape h2{font:600 11px var(--sans);color:var(--muted);letter-spacing:0.08em;text-transform:uppercase;margin-bottom:10px;display:flex;justify-content:space-between}
+.tape h2 span{font:12px var(--mono);font-weight:400;letter-spacing:0;text-transform:none}
+.line{display:grid;grid-template-columns:52px 1fr auto;gap:16px;padding:6px 0;border-bottom:1px solid var(--line);font:12px var(--mono);align-items:center}
+.line:last-child{border:0}
+.line .t{color:var(--muted)}
+.line .pair{font-family:var(--sans);font-weight:500}
+.chip{font:600 10px var(--mono);padding:3px 8px;border-radius:100px;background:rgba(245,166,35,0.1);color:var(--amber)}
+.chip.q{background:rgba(50,212,200,0.1);color:var(--cyan)}
+.muted{color:var(--muted)}
 </style>
 </head>
 <body>
 <div class="shell">
   <header>
-    <div class="logo">NS</div>
-    <h1>Near Solver Desk<span class="sub">CavalRe · chain field</span></h1>
+    <div class="mark">NS</div>
+    <h1>Near Solver<span class="hsub">CavalRe</span></h1>
     <span class="badge" id="mode">dry-run</span>
-    <div class="right">uptime <b id="up">—</b> · <span id="clk">—</span></div>
+    <div class="right"><b id="up">—</b> · <span id="clk">—</span></div>
   </header>
   <div class="main">
-    <div class="card">
+    <div class="panel">
       <h2>Decision mix</h2>
-      <div id="bars" class="muted">waiting…</div>
+      <div id="bars" class="muted">—</div>
     </div>
     <div class="hero">
-      <h2>Circuit · transparent block chain field</h2>
-      <div class="stage"><canvas id="c"></canvas></div>
-      <div class="intent" id="intent">USDC → wNEAR · waiting</div>
+      <div class="hero-inner">
+        <div class="stages" id="stages"></div>
+        <div class="intent" id="intent"></div>
+      </div>
     </div>
-    <div class="card">
-      <h2>Path funnel</h2>
-      <div class="fun" id="funnel"></div>
-      <h2 style="margin-top:12px">Bus &amp; inventory</h2>
+    <div class="panel">
+      <h2>Path</h2>
+      <div id="funnel"></div>
+      <h2 style="margin-top:28px">Inventory</h2>
       <div id="bus"></div>
       <div id="inv"></div>
     </div>
   </div>
   <div class="tape">
-    <h2>Decision tape <span id="hint" class="muted">—</span></h2>
-    <div id="stream" class="muted">npm run solver:cover</div>
+    <h2>Tape <span id="hint">—</span></h2>
+    <div id="stream" class="muted">—</div>
   </div>
 </div>
 <script src="/desk.js"></script>
