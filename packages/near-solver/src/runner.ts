@@ -1,8 +1,11 @@
 /**
  * SOLVER RUNNER — composition root.
+ *
+ * IntentRegister owns lifecycle + reserve/release transitions.
+ * PendingQuoteBook remains for reconciler fill-inference until fully replaced.
  */
 
-import { randomBytes, type KeyObject } from 'node:crypto';
+import { createHash, randomBytes, type KeyObject } from 'node:crypto';
 import * as FloatLib from '@cavalre/floatlib-ts';
 import {
   buildQuoteResponse,
@@ -14,6 +17,7 @@ import { signNep413 } from './nep413.js';
 import { rawToFloat } from './pricing.js';
 import type { DecisionJournal } from './journal.js';
 import { PendingQuoteBook } from './reconciler.js';
+import { IntentRegister } from './intentRegister.js';
 import { RelayClient, type TransportFactory } from './relay.js';
 import type { SolverRiskGuard } from './risk.js';
 import {
@@ -54,6 +58,8 @@ export interface SolverRunnerOptions {
 export class SolverRunner {
   readonly inventory: ReservingInventory;
   readonly pendingQuotes: PendingQuoteBook;
+  /** Lifecycle register — reserves on accept; outbox on live send. */
+  readonly register: IntentRegister;
   readonly metrics: RunnerMetrics = { counters: {} };
 
   private readonly pipeline: SolverPipeline;
@@ -66,6 +72,13 @@ export class SolverRunner {
     this.now = opts.now ?? Date.now;
     this.inventory = new ReservingInventory(opts.baseInventory, this.now);
     this.pendingQuotes = new PendingQuoteBook({ graceMs: SETTLEMENT_GRACE_MS, now: this.now });
+    this.register = new IntentRegister({
+      inventory: this.inventory,
+      mode: this.dryRun ? 'dry_run' : 'live',
+      now: this.now,
+      graceMs: SETTLEMENT_GRACE_MS,
+      killSwitchActive: () => this.opts.riskGuard.state.killSwitch !== null,
+    });
     this.pipeline = new SolverPipeline({
       registry: opts.registry,
       priceSource: opts.priceSource,
@@ -108,24 +121,42 @@ export class SolverRunner {
   }
 
   private onQuoteRequest(event: QuoteRequestEvent): void {
+    this.register.sweepExpired();
+
+    const observed = this.register.observe(event);
+    if (!observed.ok && observed.err === 'conflict') {
+      this.count('quote_decision:request_conflict');
+      return;
+    }
+
     const decision = this.pipeline.decide(event);
     this.opts.journal?.recordDecision(event, decision);
+
+    const applied = this.register.applyDecision(event.quoteId, decision);
+    if (!applied.ok) {
+      if (applied.detail === 'reserve_failed' || applied.err === 'guard_failed') {
+        this.count(
+          applied.detail === 'kill_switch'
+            ? 'quote_decision:kill_switch'
+            : 'quote_decision:reservation_conflict'
+        );
+        return;
+      }
+      // illegal/conflict on decide — still count reject reasons from pipeline
+      if (!decision.shouldQuote) {
+        this.count(`quote_decision:${decision.reason}`);
+      } else {
+        this.count(`quote_decision:register_${applied.err}`);
+      }
+      return;
+    }
+
     if (!decision.shouldQuote) {
       this.count(`quote_decision:${decision.reason}`);
       return;
     }
 
-    const reserved = this.inventory.reserve(
-      decision.quoteId,
-      decision.assetOut,
-      decision.amountOutRaw,
-      Date.parse(decision.deadlineIso)
-    );
-    if (!reserved) {
-      this.count('quote_decision:reservation_conflict');
-      return;
-    }
-
+    // Reconciler still reads PendingQuoteBook until inference migrates to register
     this.pendingQuotes.register({
       quoteId: decision.quoteId,
       assetIn: decision.assetIn,
@@ -152,39 +183,82 @@ export class SolverRunner {
       { message, nonce: new Uint8Array(randomBytes(NONCE_BYTES)), recipient: INTENTS_VERIFIER },
       this.opts.privateKey!
     );
-    this.relay.sendFrame(
-      buildQuoteResponse({
-        rpcId: this.relay.nextRpcId(),
-        quoteId: decision.quoteId,
-        quoteOutput:
-          event.exactAmountIn !== undefined
-            ? { amountOut: decision.amountOutRaw }
-            : { amountIn: decision.amountInRaw },
-        signedData: {
-          standard: 'nep413',
-          payload: { message, nonce: signed.nonceBase64, recipient: INTENTS_VERIFIER },
-          publicKey: signed.publicKeyString,
-          signature: `ed25519:${signed.signatureBase64}`,
-        },
-      })
-    );
+    const frame = buildQuoteResponse({
+      rpcId: this.relay.nextRpcId(),
+      quoteId: decision.quoteId,
+      quoteOutput:
+        event.exactAmountIn !== undefined
+          ? { amountOut: decision.amountOutRaw }
+          : { amountIn: decision.amountInRaw },
+      signedData: {
+        standard: 'nep413',
+        payload: { message, nonce: signed.nonceBase64, recipient: INTENTS_VERIFIER },
+        publicKey: signed.publicKeyString,
+        signature: `ed25519:${signed.signatureBase64}`,
+      },
+    });
+
+    // Interim index key until protocol quote_hash is derived bit-identically.
+    // Settlement match still prefers reconciler; this enables register.getByHash.
+    const quoteHash = createHash('sha256').update(frame).digest('hex');
+
+    const sent = this.register.markSent(decision.quoteId, {
+      quoteHash,
+      framePayload: frame,
+      signerId: this.opts.solverConfig.signerId,
+    });
+    if (!sent.ok) {
+      this.count(`quote_decision:mark_sent_${sent.err}`);
+      this.inventory.release(decision.quoteId);
+      return;
+    }
+
+    // Drain outbox → wire (at-least-once; bus must tolerate duplicate quote_id)
+    void this.register.outbox.drain((row) => {
+      this.relay.sendFrame(row.payload);
+      return { ok: true };
+    });
+
     this.count('quote_decision:quoted_live');
   }
 
   /**
    * Bus settlement carries quote_hash / intent_hash / tx_hash — not quote_id.
-   * Matching quote_id ↔ quote_hash is not wired yet; fill attribution is the
-   * Reconciler's job (balance drift vs pendingQuotes, X1). Count only.
-   * NEVER invent a fill or PnL from an unmatched hash.
+   * If register has quote_hash index, attempt markSettled; else count only.
+   * NEVER invent PnL from unmatched hash alone.
    */
   private onSettlement(event: SettlementEvent): void {
     this.count('settlement:observed');
-    // Intentionally no inventory/PnL mutation here.
-    // event.quoteHash / intentHash / txHash available for future index.
-    void event.quoteHash;
-    void event.intentHash;
-    void event.txHash;
-    this.count('settlement:deferred_to_reconciler');
+
+    const existing = this.register.getByHash(event.quoteHash);
+    if (!existing) {
+      this.count('settlement:deferred_to_reconciler');
+      return;
+    }
+
+    const result = this.register.markSettled(
+      { quoteHash: event.quoteHash },
+      { intentHash: event.intentHash, txHash: event.txHash },
+      (r) => {
+        this.inventory.commit(r.quote_id, {
+          assetIn: r.asset_in,
+          amountInRaw: BigInt(r.quote_amount_in_raw ?? '0'),
+          assetOut: r.asset_out,
+          amountOutRaw: BigInt(r.quote_amount_out_raw ?? '0'),
+          txHash: event.txHash,
+        });
+      }
+    );
+
+    if (result.ok) {
+      this.count(
+        result.outcome === 'noop' ? 'settlement:noop' : 'settlement:register_filled'
+      );
+      this.pendingQuotes.remove(existing.quote_id);
+    } else {
+      this.count(`settlement:register_${result.err}`);
+      this.count('settlement:deferred_to_reconciler');
+    }
   }
 }
 
