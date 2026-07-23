@@ -122,7 +122,10 @@ export class IntentRegister {
 
   constructor(opts: IntentRegisterOptions) {
     this.inventory = opts.inventory;
-    this.outbox = opts.outbox ?? new Outbox({ now: opts.now });
+    // exactOptionalPropertyTypes: do not pass now: undefined
+    this.outbox =
+      opts.outbox ??
+      (opts.now !== undefined ? new Outbox({ now: opts.now }) : new Outbox());
     this.now = opts.now ?? Date.now;
     this.graceMs = opts.graceMs ?? 30_000;
     this.mode = opts.mode;
@@ -247,7 +250,6 @@ export class IntentRegister {
       expires
     );
     if (!ok) {
-      // Duplicate reserve with same id already held → treat as conflict unless we own it
       if (r.reserved && r.reserve_amount_raw === decision.amountOutRaw.toString()) {
         return { ok: true, outcome: 'noop', record: clone(r) };
       }
@@ -297,7 +299,6 @@ export class IntentRegister {
     }
 
     assertEdge(r.state, 'sent');
-    // transactional: outbox + state together (no await between)
     this.outbox.enqueue(OUTBOX_TOPIC_QUOTE_RESPONSE, quoteId, params.framePayload);
     const t = this.now();
     r.quote_hash = params.quoteHash;
@@ -334,7 +335,6 @@ export class IntentRegister {
 
     const fillKey = settlement.txHash || r.quote_id;
     if (this.appliedFills.has(fillKey)) {
-      // ledger already applied; just fix state
       assertEdge(r.state, 'settled');
       r.state = 'settled';
       r.intent_hash = settlement.intentHash;
