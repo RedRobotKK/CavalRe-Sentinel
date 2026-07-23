@@ -3,12 +3,11 @@
  * DRY-RUN ENTRYPOINT — thin shell over assembleSolver() (X13).
  *
  *   npm run solver:dry-run
- *   npm run solver:dry-run -- --sim
+ *   npm run solver:dry-run -- --sim          # random market-average intents
+ *   npm run solver:dry-run -- --sim --cover  # rotate full internal footprint
  *
- * Env:
- *   JOURNAL_DIR, STATUS_EVERY, DASHBOARD_PORT, DASHBOARD_RECLAIM
- *   SIM_INTERVAL_MS  (default 3000) when --sim
- *   SIM_SEED         (default 42)
+ * Env: JOURNAL_DIR, STATUS_EVERY, DASHBOARD_PORT, DASHBOARD_RECLAIM,
+ *      SIM_INTERVAL_MS, SIM_SEED
  */
 
 import { assembleSolver } from '../app.js';
@@ -18,19 +17,19 @@ import { createStatusServer } from '../statusServer.js';
 import { reclaimListenPort } from './reclaimPort.js';
 import { createIntentSimulator, DEFAULT_AVERAGES } from '../sim/intentSim.js';
 import { MapPriceSource } from '../sim/mapPriceSource.js';
+import { createCoverageRotator } from '../sim/coverage.js';
 import { SolverPipeline } from '../solver.js';
-import { SolverRiskGuard } from '../risk.js';
-import * as FloatLib from '@cavalre/floatlib-ts';
 
 const argv = process.argv.slice(2);
 const simMode = argv.includes('--sim') || process.env['SIM_INTENTS'] === '1';
+const coverMode = argv.includes('--cover') || process.env['SIM_COVER'] === '1';
 
 const PRICE_REFRESH_MS = 2_000;
 const JOURNAL_RING_CAPACITY = 500;
 const journalDir = process.env['JOURNAL_DIR'] ?? './data/journal';
 const statusEveryMs = Number(process.env['STATUS_EVERY'] ?? '30') * 1000;
 const dashboardPort = Number(process.env['DASHBOARD_PORT'] ?? '8787');
-const simIntervalMs = Number(process.env['SIM_INTERVAL_MS'] ?? '3000');
+const simIntervalMs = Number(process.env['SIM_INTERVAL_MS'] ?? '2500');
 const simSeed = Number(process.env['SIM_SEED'] ?? '42');
 
 reclaimListenPort(dashboardPort);
@@ -58,10 +57,12 @@ const dashboard = await createStatusServer({
 console.log(`CavalRe Near Solver — DRY-RUN against ${MAINNET.solverRelayWsUrl}`);
 console.log(`journal:   ${journalDir}/decisions-YYYY-MM-DD.jsonl`);
 console.log(`dashboard: http://127.0.0.1:${dashboard.port}  (read-only, localhost only)`);
-if (simMode) {
-  console.log(`sim:       ON · seed=${simSeed} · every ${simIntervalMs}ms · Tier A (not live edge)\n`);
+if (simMode && coverMode) {
+  console.log(`sim:       COVERAGE · full footprint rotation every ${simIntervalMs}ms\n`);
+} else if (simMode) {
+  console.log(`sim:       random mids · seed=${simSeed} · ${simIntervalMs}ms · Tier A\n`);
 } else {
-  console.log(`sim:       off · pass --sim to inject market-average intents\n`);
+  console.log(`sim:       off · --sim [--cover] for internal traffic\n`);
 }
 
 app.runner.start();
@@ -71,22 +72,6 @@ const statusLoop = setInterval(() => console.log(app.statusReport() + '\n'), sta
 let simLoop: ReturnType<typeof setInterval> | undefined;
 
 if (simMode) {
-  // Dedicated MapPriceSource + pipeline path shares journal + inventory + risk
-  // via injectQuoteRequest on the live runner. Mids come from sim averages+noise;
-  // OneClick refresh still runs for observability but sim decides against Map mids
-  // by temporarily using inject with prices set on a side pipeline that uses
-  // the SAME inventory/risk/journal through runner.injectQuoteRequest.
-  //
-  // injectQuoteRequest uses the runner's assembled OneClick/stale stack — which
-  // may no_price if oracle is cold. So we also warm Map prices into a parallel
-  // pipeline only when we need guaranteed sim quotes. Prefer: inject after
-  // setting prices if we can swap source — runner priceSource is fixed.
-  //
-  // Practical approach: call pipeline.decide with MapPriceSource and mirror
-  // journal+reserve via public inject only works with runner's source.
-  // Fix: build a local decide path that journals through app.journal and
-  // reserves on app.runner.inventory — same objects.
-
   const mapPx = new MapPriceSource();
   mapPx.setMids(DEFAULT_AVERAGES.midsUsd);
   const g3 = MAINNET.g3Defaults;
@@ -106,42 +91,56 @@ if (simMode) {
     now: Date.now,
   });
 
-  const sim = createIntentSimulator({
-    seed: simSeed,
-    averages: DEFAULT_AVERAGES,
-    midNoiseSigma: 0.015,
-    minNotionalUsd: 10,
-    maxNotionalUsd: 80,
-    minDeadlineMs: 60_000,
-  });
+  const bump = (key: string) => {
+    app.runner.metrics.counters[key] = (app.runner.metrics.counters[key] ?? 0) + 1;
+  };
 
-  const tickSim = () => {
-    const tick = sim.next();
-    mapPx.setMids(tick.midsUsd);
-    const decision = simPipeline.decide(tick.request);
-    app.journal.recordDecision(tick.request, decision);
+  const applyDecision = (
+    request: import('../codec.js').QuoteRequestEvent,
+    decision: import('../solver.js').QuoteDecision
+  ) => {
+    app.journal.recordDecision(request, decision);
     if (!decision.shouldQuote) {
-      app.runner.metrics.counters[`quote_decision:${decision.reason}`] =
-        (app.runner.metrics.counters[`quote_decision:${decision.reason}`] ?? 0) + 1;
+      bump(`quote_decision:${decision.reason}`);
       return;
     }
-    const reserved = app.runner.inventory.reserve(
+    const ok = app.runner.inventory.reserve(
       decision.quoteId,
       decision.assetOut,
       decision.amountOutRaw,
       Date.parse(decision.deadlineIso)
     );
-    if (!reserved) {
-      app.runner.metrics.counters['quote_decision:reservation_conflict'] =
-        (app.runner.metrics.counters['quote_decision:reservation_conflict'] ?? 0) + 1;
-      return;
-    }
-    app.runner.metrics.counters['quote_decision:would_quote_dry_run'] =
-      (app.runner.metrics.counters['quote_decision:would_quote_dry_run'] ?? 0) + 1;
+    bump(ok ? 'quote_decision:would_quote_dry_run' : 'quote_decision:reservation_conflict');
   };
 
-  tickSim();
-  simLoop = setInterval(tickSim, simIntervalMs);
+  if (coverMode) {
+    const rot = createCoverageRotator();
+    const tickCover = () => {
+      const c = rot.next();
+      mapPx.setMids(c.midsUsd);
+      const decision = simPipeline.decide(c.request);
+      applyDecision(c.request, decision);
+      console.log(`[cover] ${c.target} → ${decision.shouldQuote ? 'WOULD_QUOTE' : decision.reason}`);
+    };
+    tickCover();
+    simLoop = setInterval(tickCover, simIntervalMs);
+  } else {
+    const sim = createIntentSimulator({
+      seed: simSeed,
+      averages: DEFAULT_AVERAGES,
+      midNoiseSigma: 0.015,
+      minNotionalUsd: 10,
+      maxNotionalUsd: 80,
+      minDeadlineMs: 60_000,
+    });
+    const tickSim = () => {
+      const tick = sim.next();
+      mapPx.setMids(tick.midsUsd);
+      applyDecision(tick.request, simPipeline.decide(tick.request));
+    };
+    tickSim();
+    simLoop = setInterval(tickSim, simIntervalMs);
+  }
 }
 
 process.on('SIGINT', () => {
