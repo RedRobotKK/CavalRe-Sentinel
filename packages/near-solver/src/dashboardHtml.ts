@@ -1,6 +1,5 @@
 /**
- * NEAR SOLVER DESK — data-dense desktop ops view.
- * Encode decisions as bars + funnel. No empty hero void.
+ * NEAR SOLVER DESK — data bars + funnel + center hero pipeline canvas.
  */
 
 export const DASHBOARD_HTML = /* html */ `<!doctype html>
@@ -18,68 +17,58 @@ export const DASHBOARD_HTML = /* html */ `<!doctype html>
 }
 *{box-sizing:border-box;margin:0}
 html,body{height:100%;background:var(--bg);color:var(--text);font:13px/1.4 var(--sans);overflow:hidden}
-.shell{height:100%;display:grid;grid-template-rows:48px 1fr 160px;gap:0}
+.shell{height:100%;display:grid;grid-template-rows:48px 1fr 150px;gap:0}
 header{display:flex;align-items:center;gap:12px;padding:0 16px;border-bottom:1px solid var(--line);background:#0e1316}
 .logo{width:28px;height:28px;background:var(--cyan);color:#042;display:grid;place-items:center;font:700 11px var(--mono);border-radius:4px}
 h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size:12px;margin-left:6px}
 .badge{font:600 10px var(--mono);padding:3px 8px;border-radius:3px;text-transform:uppercase}
 .badge.dry{background:#422006;color:#fbbf24}.badge.live{background:#064e3b;color:#5eead4}
 .right{margin-left:auto;font:12px var(--mono);color:var(--muted)}.right b{color:var(--text)}
-#kill{display:none;background:#4c0519;color:#fda4af;padding:8px 16px;font:600 12px var(--mono);border-bottom:1px solid #881337}
+#kill{display:none;background:#4c0519;color:#fda4af;padding:8px 16px;font:600 12px var(--mono)}
 #kill.on{display:block}
-.main{display:grid;grid-template-columns:1fr 1.2fr 1fr;gap:12px;padding:12px 16px;min-height:0;overflow:auto}
+.main{display:grid;grid-template-columns:1fr 1.35fr 1fr;gap:12px;padding:12px 16px;min-height:0;overflow:hidden}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:6px;padding:14px 16px;min-height:0;display:flex;flex-direction:column}
-.card h2{font:600 11px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:12px;flex:0 0 auto}
-.muted{color:var(--muted);font-size:12px;line-height:1.5;margin-bottom:12px}
-.kv{display:flex;justify-content:space-between;padding:5px 0;border-bottom:1px solid var(--line);font:12px var(--mono)}
+.card h2{font:600 11px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:10px;flex:0 0 auto}
+.muted{color:var(--muted);font-size:12px;line-height:1.45;margin-bottom:10px}
+.kv{display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--line);font:12px var(--mono)}
 .kv:last-child{border:0}.kv .k{color:var(--muted)}.kv .v.warn{color:var(--warn)}.kv .v.ok{color:var(--cyan)}.kv .v.bad{color:var(--bad)}
-
-/* horizontal bars — tableau-style */
-.bars{flex:1;display:flex;flex-direction:column;gap:8px;min-height:0}
-.bar-row{display:grid;grid-template-columns:110px 1fr 36px;gap:8px;align-items:center;font:12px var(--mono)}
+.bars{flex:1;display:flex;flex-direction:column;gap:7px;min-height:0;overflow:auto}
+.bar-row{display:grid;grid-template-columns:100px 1fr 32px;gap:8px;align-items:center;font:12px var(--mono)}
 .bar-row .label{color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
-.bar-track{height:14px;background:#0a0e11;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
-.bar-fill{height:100%;border-radius:2px;background:var(--cyan);min-width:2px;transition:width .3s ease}
-.bar-fill.reject{background:var(--warn)}
-.bar-fill.quote{background:var(--cyan)}
-.bar-n{text-align:right;font-weight:600;font-size:12px}
-
-/* funnel */
-.funnel{display:flex;flex-direction:column;gap:6px;flex:1}
-.funnel-step{display:grid;grid-template-columns:72px 1fr 40px;gap:8px;align-items:center}
+.bar-track{height:13px;background:#0a0e11;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
+.bar-fill{height:100%;border-radius:2px;min-width:2px;transition:width .3s ease}
+.bar-fill.reject{background:var(--warn)}.bar-fill.quote{background:var(--cyan)}
+.bar-n{text-align:right;font-weight:600}
+.funnel{display:flex;flex-direction:column;gap:5px}
+.funnel-step{display:grid;grid-template-columns:64px 1fr 36px;gap:8px;align-items:center}
 .funnel-step .name{font:600 11px var(--mono);color:var(--muted)}
-.funnel-step .track{height:28px;background:#0a0e11;border-radius:3px;border:1px solid var(--line);position:relative;overflow:hidden}
-.funnel-step .fill{height:100%;background:linear-gradient(90deg,#0f766e,var(--cyan));border-radius:2px;transition:width .35s ease}
-.funnel-step .n{font:700 13px var(--mono);text-align:right}
+.funnel-step .track{height:22px;background:#0a0e11;border-radius:3px;border:1px solid var(--line);overflow:hidden}
+.funnel-step .fill{height:100%;background:linear-gradient(90deg,#0f766e,var(--cyan));transition:width .35s ease}
+.funnel-step .n{font:700 12px var(--mono);text-align:right}
 .funnel-step.active .name{color:var(--cyan)}
 
-/* active request */
-.req-pair{display:flex;align-items:center;justify-content:center;gap:14px;padding:16px 8px;margin-bottom:12px;
-  background:#0a0e11;border:1px solid var(--line);border-radius:6px}
-.req-pair .sym{font:700 24px var(--sans);letter-spacing:-.02em}
-.req-pair .arrow{color:var(--cyan);font-size:20px}
-.req-meta{display:flex;flex-wrap:wrap;gap:12px;justify-content:center;font:12px var(--mono);color:var(--muted);margin-bottom:12px}
+/* HERO */
+.hero-wrap{flex:1;min-height:0;display:flex;flex-direction:column;gap:10px}
+#hero{width:100%;flex:1;min-height:160px;background:#070b0e;border:1px solid var(--line);border-radius:6px;display:block}
+.req-pair{display:flex;align-items:center;justify-content:center;gap:12px;padding:10px;background:#0a0e11;border:1px solid var(--line);border-radius:6px}
+.req-pair .sym{font:700 20px var(--sans)}.req-pair .arrow{color:var(--cyan);font-size:18px}
+.req-meta{display:flex;flex-wrap:wrap;gap:10px;justify-content:center;font:11px var(--mono);color:var(--muted)}
 .req-meta b{color:var(--text)}
-.gates{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;align-items:center}
-.gate{font:600 10px var(--mono);padding:4px 8px;border-radius:3px;background:#0a0e11;border:1px solid var(--border);color:var(--muted);text-transform:uppercase}
+.gates{display:flex;flex-wrap:wrap;gap:5px;justify-content:center;align-items:center;margin-top:8px}
+.gate{font:600 9px var(--mono);padding:3px 7px;border-radius:3px;background:#0a0e11;border:1px solid var(--border);color:var(--muted);text-transform:uppercase}
 .gate.pass{color:var(--cyan);border-color:#115e59;background:#042f2e}
 .gate.fail{color:var(--bad);border-color:#9f1239;background:#4c0519}
 .gate.wait{color:var(--warn);border-color:#854d0e;background:#422006}
-.verdict{font:700 11px var(--mono);padding:5px 10px;border-radius:3px;text-transform:uppercase;border:1px solid}
+.verdict{font:700 10px var(--mono);padding:4px 9px;border-radius:3px;text-transform:uppercase;border:1px solid}
 .verdict.q{color:var(--cyan);border-color:#115e59;background:#042f2e}
 .verdict.r{color:var(--warn);border-color:#854d0e;background:#422006}
 .verdict.h{color:var(--bad);border-color:#9f1239;background:#4c0519}
-
-/* activity strip */
-.activity{height:6px;background:#0a0e11;border-radius:2px;margin-top:12px;overflow:hidden;border:1px solid var(--line);position:relative}
-.activity i{position:absolute;top:0;bottom:0;width:30%;background:linear-gradient(90deg,transparent,var(--cyan),transparent);animation:scan 2.4s linear infinite;opacity:.7}
-@keyframes scan{0%{left:-30%}100%{left:100%}}
 
 .tape-wrap{border-top:1px solid var(--line);background:var(--panel);padding:8px 16px;display:flex;flex-direction:column;min-height:0}
 .tape-wrap h2{font:600 11px var(--sans);color:var(--muted);text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;display:flex;justify-content:space-between}
 .tape-wrap h2 span{font:11px var(--mono);font-weight:500;text-transform:none;letter-spacing:0}
 #stream{flex:1;overflow:auto;font:12px var(--mono)}
-.line{display:grid;grid-template-columns:56px 1fr auto auto;gap:10px;padding:4px 0;border-bottom:1px solid var(--line);align-items:center}
+.line{display:grid;grid-template-columns:56px 1fr auto auto;gap:10px;padding:3px 0;border-bottom:1px solid var(--line);align-items:center}
 .line .t{color:var(--muted)}.line .pair{font-weight:600}
 .chip{font:700 10px var(--mono);padding:2px 6px;border-radius:3px;text-transform:uppercase}
 .chip.q{background:#042f2e;color:var(--cyan)}.chip.r{background:#422006;color:var(--warn)}.chip.h{background:#4c0519;color:var(--bad)}
@@ -98,22 +87,23 @@ h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size
   <div class="main">
     <div class="card">
       <h2>Decision mix</h2>
-      <p class="muted">Share of <code>decide()</code> outcomes. Longer bar = more of that reason.</p>
+      <p class="muted">Longer bar = more of that decide() reason.</p>
       <div class="bars" id="bars"></div>
     </div>
     <div class="card">
-      <h2>Active request</h2>
-      <div id="intentCard"></div>
-      <div class="activity" title="processing"><i></i></div>
+      <h2>Pipeline · ingest → decide → out</h2>
+      <div class="hero-wrap">
+        <canvas id="hero"></canvas>
+        <div id="intentCard"></div>
+      </div>
     </div>
     <div class="card">
       <h2>Path funnel</h2>
-      <p class="muted">Volume through the fail-closed path.</p>
       <div class="funnel" id="funnel"></div>
-      <div style="margin-top:14px">
+      <div style="margin-top:12px">
         <h2>Bus &amp; inventory</h2>
         <div id="bus"></div>
-        <div id="inv" style="margin-top:8px"></div>
+        <div id="inv" style="margin-top:6px"></div>
       </div>
     </div>
   </div>
@@ -125,6 +115,115 @@ h1{font:600 14px var(--sans)}.h1sub{color:var(--muted);font-weight:400;font-size
 <script>
 const $ = id => document.getElementById(id);
 const esc = s => String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+/* ---- HERO canvas: packets through labeled stages ---- */
+const hero = $('hero');
+const hctx = hero.getContext('2d');
+const STAGES = ['BUS', 'SEE', 'MARK', 'DECIDE', 'RISK', 'QUOTE'];
+const packets = [];
+let heroFlash = 0; // 0..1 burst intensity
+
+function resizeHero() {
+  const r = hero.getBoundingClientRect();
+  const dpr = Math.min(devicePixelRatio || 1, 2);
+  hero.width = Math.max(1, Math.floor(r.width * dpr));
+  hero.height = Math.max(1, Math.floor(r.height * dpr));
+  hctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+resizeHero();
+addEventListener('resize', resizeHero);
+
+function spawnPacket(ok) {
+  packets.push({
+    t: 0,
+    speed: 0.28 + Math.random() * 0.2,
+    ok,
+    yOff: (Math.random() - 0.5) * 16,
+  });
+}
+
+function drawHero(ts) {
+  const w = hero.getBoundingClientRect().width;
+  const h = hero.getBoundingClientRect().height;
+  if (w < 10 || h < 10) { requestAnimationFrame(drawHero); return; }
+  hctx.clearRect(0, 0, w, h);
+
+  // background grid
+  hctx.strokeStyle = 'rgba(45,212,191,0.06)';
+  hctx.lineWidth = 1;
+  for (let x = 0; x < w; x += 24) {
+    hctx.beginPath(); hctx.moveTo(x, 0); hctx.lineTo(x, h); hctx.stroke();
+  }
+  for (let y = 0; y < h; y += 24) {
+    hctx.beginPath(); hctx.moveTo(0, y); hctx.lineTo(w, y); hctx.stroke();
+  }
+
+  const pad = 28;
+  const midY = h * 0.48;
+  const span = w - pad * 2;
+  const n = STAGES.length;
+
+  // conduit
+  hctx.strokeStyle = 'rgba(45,212,191,0.25)';
+  hctx.lineWidth = 3;
+  hctx.beginPath();
+  hctx.moveTo(pad, midY);
+  hctx.lineTo(pad + span, midY);
+  hctx.stroke();
+
+  // stage nodes
+  for (let i = 0; i < n; i++) {
+    const x = pad + (span * i) / (n - 1);
+    const pulse = 0.55 + 0.2 * Math.sin(ts * 0.003 + i);
+    const r = 9 + (heroFlash > 0 ? heroFlash * 3 : 0);
+    hctx.beginPath();
+    hctx.arc(x, midY, r, 0, Math.PI * 2);
+    hctx.fillStyle = 'rgba(45,212,191,' + (0.15 + pulse * 0.2) + ')';
+    hctx.fill();
+    hctx.strokeStyle = '#2dd4bf';
+    hctx.lineWidth = 2;
+    hctx.stroke();
+    hctx.fillStyle = '#7a8b94';
+    hctx.font = '600 10px ui-monospace, monospace';
+    hctx.textAlign = 'center';
+    hctx.fillText(STAGES[i], x, midY + 28);
+  }
+
+  // packets
+  for (let i = packets.length - 1; i >= 0; i--) {
+    const p = packets[i];
+    p.t += p.speed * 0.016;
+    if (p.t >= 1) { packets.splice(i, 1); continue; }
+    const x = pad + span * p.t;
+    const y = midY + p.yOff * Math.sin(p.t * Math.PI);
+    const alpha = 0.35 + 0.65 * Math.sin(p.t * Math.PI);
+    hctx.beginPath();
+    hctx.arc(x, y, 5, 0, Math.PI * 2);
+    hctx.fillStyle = p.ok
+      ? 'rgba(45,212,191,' + alpha + ')'
+      : 'rgba(234,179,8,' + alpha + ')';
+    hctx.fill();
+    // trail
+    hctx.beginPath();
+    hctx.moveTo(x - 14, y);
+    hctx.lineTo(x, y);
+    hctx.strokeStyle = p.ok
+      ? 'rgba(45,212,191,' + (alpha * 0.4) + ')'
+      : 'rgba(234,179,8,' + (alpha * 0.4) + ')';
+    hctx.lineWidth = 2;
+    hctx.stroke();
+  }
+
+  if (heroFlash > 0) heroFlash = Math.max(0, heroFlash - 0.02);
+
+  // idle trickle so fullscreen never dies
+  if (Math.random() < 0.012) spawnPacket(Math.random() > 0.4);
+
+  requestAnimationFrame(drawHero);
+}
+requestAnimationFrame(drawHero);
+
+let lastWould = 0, lastReject = 0;
 
 function fmtAmount(raw, decimals) {
   const v = BigInt(raw), d = BigInt(decimals), scale = 10n ** d;
@@ -154,7 +253,7 @@ function renderBars(counters) {
     .map(([k, v]) => [k.replace(/^quote_decision:/, ''), v])
     .sort((a, b) => b[1] - a[1]);
   if (!entries.length) {
-    $('bars').innerHTML = '<div class="empty">No decisions yet — run solver:cover</div>';
+    $('bars').innerHTML = '<div class="empty">No decisions yet</div>';
     return;
   }
   const max = Math.max(...entries.map(([, v]) => v), 1);
@@ -177,8 +276,7 @@ function renderFunnel(seen, rejected, quoted, frames) {
   ];
   $('funnel').innerHTML = steps.map(s => {
     const pct = Math.max(4, Math.round((s.n / s.max) * 100));
-    const active = s.n > 0 ? ' active' : '';
-    return '<div class="funnel-step' + active + '"><span class="name">' + s.name + '</span>' +
+    return '<div class="funnel-step' + (s.n > 0 ? ' active' : '') + '"><span class="name">' + s.name + '</span>' +
       '<div class="track"><div class="fill" style="width:' + pct + '%"></div></div>' +
       '<span class="n">' + s.n + '</span></div>';
   }).join('');
@@ -234,7 +332,7 @@ function render(s, journal) {
   else kill.className = '';
 
   const r = s.relay || {}, frames = r.framesReceived || 0;
-  let hc = 'warn', ht = 'No frames (partner key for live bus)';
+  let hc = 'warn', ht = 'No frames (partner key)';
   if (frames > 0) { hc = 'ok'; ht = 'Receiving'; }
   else if (r.reconnects > 0) { hc = 'bad'; ht = 'Reconnect storm'; }
   $('bus').innerHTML = kv('Frames', frames) + kv('Reconnects', r.reconnects || 0) + kv('Status', ht, hc);
@@ -250,6 +348,16 @@ function render(s, journal) {
   const seen = would + rejects;
   renderFunnel(seen, rejects, would, frames);
 
+  if (would > lastWould) {
+    for (let i = 0; i < Math.min(6, would - lastWould); i++) spawnPacket(true);
+    heroFlash = 1;
+  }
+  if (rejects > lastReject) {
+    for (let i = 0; i < Math.min(6, rejects - lastReject); i++) spawnPacket(false);
+    heroFlash = 1;
+  }
+  lastWould = would; lastReject = rejects;
+
   const j = journal || [];
   let card = null;
   for (let i = j.length - 1; i >= 0; i--) { card = fromJournal(j[i], dry); if (card) break; }
@@ -261,7 +369,7 @@ function render(s, journal) {
     $('intentCard').innerHTML = renderIntent(SAMPLE);
   }
 
-  const rows = j.slice(-40).reverse().map(e => {
+  const rows = j.slice(-36).reverse().map(e => {
     if (e.type !== 'quote_decision') return '';
     const d = e.decision, ev = e.event;
     const pair = symOf(ev.assetIn) + ' → ' + symOf(ev.assetOut);
@@ -288,6 +396,7 @@ async function tick() {
   $('clock').textContent = new Date().toISOString().slice(11, 19) + 'Z';
 }
 tick(); setInterval(tick, 2000);
+setTimeout(resizeHero, 100);
 </script>
 </body>
 </html>`;
