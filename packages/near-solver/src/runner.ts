@@ -102,6 +102,14 @@ export class SolverRunner {
     return this.relay.stats;
   }
 
+  /**
+   * Inject a protocol-valid quote_request through the SAME path as the bus.
+   * Used by Tier A intentSim; does not mark relay frames.
+   */
+  injectQuoteRequest(event: QuoteRequestEvent): void {
+    this.onQuoteRequest(event);
+  }
+
   start(): void {
     if (!this.dryRun && !this.opts.privateKey) {
       throw new Error('live mode requires a private key; refusing to start');
@@ -125,8 +133,6 @@ export class SolverRunner {
       return;
     }
 
-    // Hold the payout for the quote's lifetime — dry-run included, so both
-    // modes exercise identical inventory behavior.
     const reserved = this.inventory.reserve(
       decision.quoteId,
       decision.assetOut,
@@ -138,7 +144,6 @@ export class SolverRunner {
       return;
     }
 
-    // Register for fill inference (X1) — dry-run included, for parity.
     this.pendingQuotes.register({
       quoteId: decision.quoteId,
       assetIn: decision.assetIn,
@@ -163,7 +168,7 @@ export class SolverRunner {
     });
     const signed = signNep413(
       { message, nonce: new Uint8Array(randomBytes(NONCE_BYTES)), recipient: INTENTS_VERIFIER },
-      this.opts.privateKey! // presence enforced in start()
+      this.opts.privateKey!
     );
     this.relay.sendFrame(
       buildQuoteResponse({
@@ -185,23 +190,11 @@ export class SolverRunner {
   }
 
   private onSettlement(event: SettlementEvent): void {
-    // Settlement-to-quote matching requires tracking our quote hashes from
-    // relay acks; until that lands, settlements are counted for observability
-    // and reconciliation stays manual. Reservations self-expire regardless.
     this.count('settlement:observed');
     void event;
   }
 }
 
-// ============================================================================
-// REALIZED EDGE
-// ============================================================================
-
-/**
- * USD edge captured on a fill: value received minus value paid.
- * Null (fail-closed) if either leg is unpriceable — feed nothing into the
- * risk guard rather than a fabricated number.
- */
 export function realizedEdgeUsd(params: {
   assetIn: string;
   amountInRaw: bigint;
