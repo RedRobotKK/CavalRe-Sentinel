@@ -67,10 +67,15 @@ function logUniform(rand: () => number, lo: number, hi: number): number {
   return Math.exp(a + rand() * (b - a));
 }
 
+function requireListed(asset: string): void {
+  if (!MAINNET_REGISTRY.has(asset)) {
+    throw new Error(`intentSim: asset not in registry ${asset}`);
+  }
+}
+
 function decimalsOf(asset: string): bigint {
-  const info = MAINNET_REGISTRY.get(asset);
-  if (!info) throw new Error(`intentSim: asset not in registry ${asset}`);
-  return info.decimals;
+  requireListed(asset);
+  return MAINNET_REGISTRY.get(asset)!.decimals;
 }
 
 function usdToRaw(usd: number, asset: string, midUsd: number): bigint {
@@ -85,7 +90,7 @@ export const DEFAULT_AVERAGES: MarketAverages = {
   midsUsd: {
     [USDC_NEAR]: 1.0,
     [USDT_NEAR]: 1.0,
-    [WNEAR]: 1.86, // align order-of-magnitude with oracle:verify; override in config
+    [WNEAR]: 1.86,
   },
 };
 
@@ -104,10 +109,13 @@ export function createIntentSimulator(config: IntentSimConfig) {
   }
 
   function next(quoteId?: string): SimulatedIntent {
-    const midsUsd = noisyMids();
     const pair = pick(rand, pairs);
     const [a, b] = pair;
-    // random direction
+    // Registry first — fail closed before mid lookup / noise
+    requireListed(a);
+    requireListed(b);
+
+    const midsUsd = noisyMids();
     const flip = rand() < 0.5;
     const assetIn = flip ? a : b;
     const assetOut = flip ? b : a;
@@ -122,7 +130,9 @@ export function createIntentSimulator(config: IntentSimConfig) {
 
     const id =
       quoteId ??
-      `0xsim${Math.floor(rand() * 1e16).toString(16).padStart(14, '0')}`;
+      `0xsim${Math.floor(rand() * 1e16)
+        .toString(16)
+        .padStart(14, '0')}`;
 
     let exactAmountIn: bigint | undefined;
     let exactAmountOut: bigint | undefined;
