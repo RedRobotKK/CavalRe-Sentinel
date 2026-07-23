@@ -121,7 +121,7 @@ describe('createStatusServer', () => {
       const html = await res.text();
       expect(html).toContain('NEAR SOLVER DESK');
       expect(html).toContain('/api/status');
-      expect(html).toContain('Pipeline');
+      expect(html).toContain('Decision mix');
     } finally {
       await server.close();
     }
