@@ -21,4 +21,14 @@ export * from './statusServer.js';
 export * from './dashboardHtml.js';
 export * from './outbox.js';
 export * from './intentRegister.js';
-export * from './intentMachine.js';
+// intentMachine also defines IntentMode — re-export explicitly to avoid TS2308
+export {
+  intentMachine,
+  createIntentActor,
+  intentState,
+  intentContext,
+  type IntentContext,
+  type IntentEvent,
+  type IntentInput,
+  type IntentMode as MachineIntentMode,
+} from './intentMachine.js';

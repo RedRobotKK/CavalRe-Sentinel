@@ -1,13 +1,9 @@
 /**
  * XState v5 intent lifecycle — declarative mirror of IntentRegister.
  *
- * Authority for production inventory/outbox remains IntentRegister unless you
- * explicitly drive side effects from actions. This machine is for:
- *  - Stately Studio (paste definition / inspect)
- *  - @xstate/inspect experiments
- *  - createActor tests that lock the transition graph
- *
- * Docs: https://stately.ai/docs/machines
+ * Production inventory/outbox authority remains IntentRegister.
+ * IntentMode here is the same union as the register; exported from index as MachineIntentMode
+ * to avoid ambiguous export * clashes.
  */
 
 import { setup, assign, createActor } from 'xstate';
@@ -25,7 +21,6 @@ export interface IntentContext {
   assetOut: string | null;
   amountOutRaw: string | null;
   expiresAtMs: number | null;
-  /** Side-effect log for tests / inspect (not a substitute for inventory). */
   effects: string[];
 }
 
@@ -130,7 +125,6 @@ export const intentMachine = setup({
             'logOutbox',
           ],
         },
-        // Second guard layer: hasPayload — if live but empty, stay reserved
         EXPIRE: { target: 'expired', actions: 'logRelease' },
         RELEASE: { target: 'released', actions: 'logRelease' },
       },
@@ -157,7 +151,6 @@ export const intentMachine = setup({
     decided_reject: {
       type: 'final',
       on: {
-        // idempotent: ignore re-reject / expire noise
         DECIDE_REJECT: undefined,
         EXPIRE: undefined,
       },
@@ -172,7 +165,7 @@ export const intentMachine = setup({
     expired: {
       type: 'final',
       on: {
-        EXPIRE: undefined, // idempotent
+        EXPIRE: undefined,
       },
     },
     released: {
@@ -185,14 +178,12 @@ export const intentMachine = setup({
   },
 });
 
-/** Spawn a started actor for one quote (tests + inspect). */
 export function createIntentActor(input: IntentInput) {
   const actor = createActor(intentMachine, { input });
   actor.start();
   return actor;
 }
 
-/** Snapshot helpers for assertions / inspect. */
 export function intentState(actor: ReturnType<typeof createIntentActor>): string {
   const v = actor.getSnapshot().value;
   return typeof v === 'string' ? v : JSON.stringify(v);
