@@ -1,11 +1,11 @@
 /**
- * Status server + dashboard contract tests.
+ * Status server + dashboard + journal sinks contract tests.
  */
 
 import { describe, it, expect } from 'vitest';
 import { createStatusServer, buildStatusJson } from '../src/statusServer.js';
 import type { StatusReportInput } from '../src/status.js';
-import { ringSink, teeSink } from '../src/journal.js';
+import { ringSink, teeSink } from '../src/sinks.js';
 
 function sampleSnapshot(): StatusReportInput {
   return {
@@ -22,15 +22,15 @@ function sampleSnapshot(): StatusReportInput {
 
 describe('ringSink', () => {
   it('keeps last N lines', () => {
-    const sink = ringSink(2);
-    sink.write('a');
-    sink.write('b');
-    sink.write('c');
-    expect(sink.recent()).toEqual(['b', 'c']);
+    const ring = ringSink(2);
+    ring.sink('a');
+    ring.sink('b');
+    ring.sink('c');
+    expect(ring.entries()).toEqual(['b', 'c']);
   });
 
   it('empty recent is empty array', () => {
-    expect(ringSink(3).recent()).toEqual([]);
+    expect(ringSink(3).entries()).toEqual([]);
   });
 });
 
@@ -39,10 +39,10 @@ describe('teeSink', () => {
     const a: string[] = [];
     const b: string[] = [];
     const tee = teeSink(
-      { write: (l) => a.push(l) },
-      { write: (l) => b.push(l) }
+      (l) => a.push(l),
+      (l) => b.push(l)
     );
-    tee.write('x');
+    tee('x');
     expect(a).toEqual(['x']);
     expect(b).toEqual(['x']);
   });
@@ -50,14 +50,12 @@ describe('teeSink', () => {
   it('continues if one sink throws', () => {
     const ok: string[] = [];
     const tee = teeSink(
-      {
-        write: () => {
-          throw new Error('boom');
-        },
+      () => {
+        throw new Error('boom');
       },
-      { write: (l) => ok.push(l) }
+      (l) => ok.push(l)
     );
-    expect(() => tee.write('y')).not.toThrow();
+    expect(() => tee('y')).not.toThrow();
     expect(ok).toEqual(['y']);
   });
 });
@@ -121,7 +119,6 @@ describe('createStatusServer', () => {
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/html');
       const html = await res.text();
-      // Intent HUD (NEAR desk) — not the old "Sentinel" title
       expect(html).toContain('Intent HUD');
       expect(html).toContain('/api/status');
     } finally {
