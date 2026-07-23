@@ -16,7 +16,8 @@
   "license": "MIT",
   "dependencies": {
     "@cavalre/floatlib-ts": "file:../floatlib-ts",
-    "@cavalre/ledger-ts": "file:../ledger-ts"
+    "@cavalre/ledger-ts": "file:../ledger-ts",
+    "xstate": "^5.18.2"
   },
   "devDependencies": {
     "typescript": "^5.3.0",

@@ -21,3 +21,4 @@ export * from './statusServer.js';
 export * from './dashboardHtml.js';
 export * from './outbox.js';
 export * from './intentRegister.js';
+export * from './intentMachine.js';
