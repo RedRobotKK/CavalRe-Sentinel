@@ -1,26 +1,22 @@
 /**
- * STATUS SERVER — the read-only data spine of the web presentation layer.
+ * STATUS SERVER — read-only data spine.
  *
- * X18 (security): binds 127.0.0.1 ONLY and answers GET ONLY. There is no
- * mutating endpoint; there is no auth because there is nothing to protect
- * beyond read access on localhost. Exposing this beyond localhost requires
- * a reverse proxy with auth and a fresh security review.
- *
- * Data contract (agreed across teams):
- *  - /api/status          summary snapshot; amounts as EXACT raw strings
- *                         (quant rule: the API never rounds, the UI formats)
- *  - /api/journal/recent  last N journal lines, parsed client-side
- *  - /                    the dashboard (single embedded file, no build step)
+ * X18: 127.0.0.1 ONLY, GET ONLY.
+ *  - /api/status
+ *  - /api/journal/recent
+ *  - /metrics          Prometheus text (Grafana/Prometheus scrape)
+ *  - /
  */
 
 import { createServer } from 'node:http';
 import type { StatusReportInput } from './status.js';
 import { DASHBOARD_HTML } from './dashboardHtml.js';
+import { buildPrometheusText } from './metrics.js';
 
-const HOST = '127.0.0.1'; // X18: localhost only, not configurable by design
+const HOST = '127.0.0.1';
 
 export interface StatusServerOptions {
-  port: number; // 0 = ephemeral (tests)
+  port: number;
   snapshot: () => StatusReportInput;
   recentJournal: () => string[];
 }
@@ -38,7 +34,7 @@ export function buildStatusJson(s: StatusReportInput): string {
     counters: s.counters,
     inventory: s.inventoryLines.map((l) => ({
       symbol: l.symbol,
-      availableRaw: l.availableRaw.toString(), // exact — never rounded here
+      availableRaw: l.availableRaw.toString(),
       decimals: Number(l.decimals),
     })),
     activeReservations: s.activeReservations,
@@ -66,6 +62,13 @@ export function createStatusServer(opts: StatusServerOptions): Promise<StatusSer
         res
           .writeHead(200, { 'content-type': 'application/json' })
           .end(`[${opts.recentJournal().join(',')}]`);
+        return;
+      case '/metrics':
+        res
+          .writeHead(200, {
+            'content-type': 'text/plain; version=0.0.4; charset=utf-8',
+          })
+          .end(buildPrometheusText(opts.snapshot()));
         return;
       default:
         res.writeHead(404, { 'content-type': 'text/plain' }).end('not found');
