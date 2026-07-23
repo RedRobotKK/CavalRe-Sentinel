@@ -3,6 +3,8 @@
  *
  * IntentRegister owns lifecycle + reserve/release transitions.
  * PendingQuoteBook remains for reconciler fill-inference until fully replaced.
+ * Maintenance tick: sweepExpired + outbox.drain so idle periods still free holds
+ * and retry publishes.
  */
 
 import { createHash, randomBytes, type KeyObject } from 'node:crypto';
@@ -32,6 +34,8 @@ import {
 const INTENTS_VERIFIER = 'intents.near';
 const NONCE_BYTES = 32;
 const SETTLEMENT_GRACE_MS = 30_000;
+/** Idle maintenance: expire holds + drain outbox without waiting for next quote. */
+const MAINTENANCE_MS = 5_000;
 
 export interface RunnerMetrics {
   counters: Record<string, number>;
@@ -53,12 +57,13 @@ export interface SolverRunnerOptions {
   privateKey?: KeyObject;
   journal?: DecisionJournal;
   now?: () => number;
+  /** Override maintenance interval (tests). 0 = disable timer. */
+  maintenanceMs?: number;
 }
 
 export class SolverRunner {
   readonly inventory: ReservingInventory;
   readonly pendingQuotes: PendingQuoteBook;
-  /** Lifecycle register — reserves on accept; outbox on live send. */
   readonly register: IntentRegister;
   readonly metrics: RunnerMetrics = { counters: {} };
 
@@ -66,10 +71,13 @@ export class SolverRunner {
   private readonly relay: RelayClient;
   private readonly dryRun: boolean;
   private readonly now: () => number;
+  private readonly maintenanceMs: number;
+  private maintenanceTimer: ReturnType<typeof setInterval> | null = null;
 
   constructor(private readonly opts: SolverRunnerOptions) {
     this.dryRun = opts.dryRun ?? true;
     this.now = opts.now ?? Date.now;
+    this.maintenanceMs = opts.maintenanceMs ?? MAINTENANCE_MS;
     this.inventory = new ReservingInventory(opts.baseInventory, this.now);
     this.pendingQuotes = new PendingQuoteBook({ graceMs: SETTLEMENT_GRACE_MS, now: this.now });
     this.register = new IntentRegister({
@@ -105,14 +113,42 @@ export class SolverRunner {
     this.onQuoteRequest(event);
   }
 
+  /** Test / ops: run one maintenance cycle. */
+  runMaintenance(): void {
+    const expired = this.register.sweepExpired();
+    if (expired.length > 0) {
+      this.count('register:expired_sweep');
+      for (const r of expired) {
+        this.pendingQuotes.remove(r.quote_id);
+      }
+    }
+    if (!this.dryRun) {
+      void this.register.outbox.drain((row) => {
+        this.relay.sendFrame(row.payload);
+        return { ok: true };
+      });
+    }
+  }
+
   start(): void {
     if (!this.dryRun && !this.opts.privateKey) {
       throw new Error('live mode requires a private key; refusing to start');
     }
     this.relay.start();
+    if (this.maintenanceMs > 0 && this.maintenanceTimer === null) {
+      this.maintenanceTimer = setInterval(() => this.runMaintenance(), this.maintenanceMs);
+      // unref so Node can exit in tests if only timer remains
+      if (typeof this.maintenanceTimer === 'object' && 'unref' in this.maintenanceTimer) {
+        this.maintenanceTimer.unref();
+      }
+    }
   }
 
   stop(): void {
+    if (this.maintenanceTimer !== null) {
+      clearInterval(this.maintenanceTimer);
+      this.maintenanceTimer = null;
+    }
     this.relay.stop();
   }
 
@@ -142,7 +178,6 @@ export class SolverRunner {
         );
         return;
       }
-      // illegal/conflict on decide — still count reject reasons from pipeline
       if (!decision.shouldQuote) {
         this.count(`quote_decision:${decision.reason}`);
       } else {
@@ -156,7 +191,6 @@ export class SolverRunner {
       return;
     }
 
-    // Reconciler still reads PendingQuoteBook until inference migrates to register
     this.pendingQuotes.register({
       quoteId: decision.quoteId,
       assetIn: decision.assetIn,
@@ -198,8 +232,6 @@ export class SolverRunner {
       },
     });
 
-    // Interim index key until protocol quote_hash is derived bit-identically.
-    // Settlement match still prefers reconciler; this enables register.getByHash.
     const quoteHash = createHash('sha256').update(frame).digest('hex');
 
     const sent = this.register.markSent(decision.quoteId, {
@@ -213,7 +245,6 @@ export class SolverRunner {
       return;
     }
 
-    // Drain outbox → wire (at-least-once; bus must tolerate duplicate quote_id)
     void this.register.outbox.drain((row) => {
       this.relay.sendFrame(row.payload);
       return { ok: true };
@@ -222,11 +253,6 @@ export class SolverRunner {
     this.count('quote_decision:quoted_live');
   }
 
-  /**
-   * Bus settlement carries quote_hash / intent_hash / tx_hash — not quote_id.
-   * If register has quote_hash index, attempt markSettled; else count only.
-   * NEVER invent PnL from unmatched hash alone.
-   */
   private onSettlement(event: SettlementEvent): void {
     this.count('settlement:observed');
 

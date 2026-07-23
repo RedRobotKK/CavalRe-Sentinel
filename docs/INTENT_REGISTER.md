@@ -1,41 +1,44 @@
 # Intent register & transactional outbox
 
-**Status:** implemented in `@cavalre/near-solver` (`IntentRegister`, `Outbox`).  
-**Not yet:** default `SolverRunner` path still uses `PendingQuoteBook` directly — wire when residual live send is enabled.
+**Status:** wired into `SolverRunner` (observe → decide → applyDecision → reserve).
 
-## IntentRegister
-
-Lifecycle per `quote_id`:
+## Runtime path
 
 ```text
-seen → decided_reject
-     → reserved → expired | released | sent → settled | expired | released
+quote_request
+  → register.observe
+  → pipeline.decide
+  → register.applyDecision  (± reserve)
+  → pendingQuotes.register (reconciler)
+  → dry-run: stop
+  → live: sign → markSent (outbox + hash) → drain → wire
+
+settlement (quote_hash)
+  → register.markSettled if indexed
+  → else deferred_to_reconciler
+
+maintenance (5s)
+  → register.sweepExpired
+  → outbox.drain (live only)
 ```
 
-- Inventory `reserve` / `release` / fill only inside transitions
-- Dry-run cannot `markSent`
-- `markSent` enqueues `quote_response` on the outbox in the same synchronous step as `state=sent` + `quote_hash` index
-- `markSettled` is idempotent on `tx_hash` (fill runs once)
+## Status
 
-## Outbox
+`statusReport` includes:
 
 ```text
-pending → publishing → done
-                   └→ pending (retry) | failed
+register: reserved=N sent=N settled=N reject=N expired=N | outbox_pending=N
 ```
 
-```ts
-register.markSent(id, { quoteHash, framePayload, signerId });
-await register.outbox.drain(async (row) => {
-  relay.sendFrame(row.payload);
-  return { ok: true };
-});
-```
+## XState mirror
 
-Same `(topic, idempotencyKey)` + same payload → enqueue noop. Different payload → throw conflict.
+See `docs/INTENT_MACHINE.md` — visualization / actor tests only. Not production inventory authority.
 
 ## Tests
 
 ```bash
 npm test -w @cavalre/near-solver -- intentRegister
+npm test -w @cavalre/near-solver -- runner.register
+npm test -w @cavalre/near-solver -- runner.maintenance
+npm test -w @cavalre/near-solver -- intentMachine
 ```
