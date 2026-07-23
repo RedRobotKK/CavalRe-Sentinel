@@ -119,8 +119,9 @@ describe('createStatusServer', () => {
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/html');
       const html = await res.text();
-      expect(html).toContain('Intent HUD');
+      expect(html).toContain('NEAR SOLVER DESK');
       expect(html).toContain('/api/status');
+      expect(html).toContain('three');
     } finally {
       await server.close();
     }
