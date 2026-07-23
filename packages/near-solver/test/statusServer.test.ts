@@ -108,7 +108,7 @@ describe('createStatusServer', () => {
     }
   });
 
-  it('serves the dashboard at / as HTML', async () => {
+  it('serves the dashboard at / as HTML with desk.js reference', async () => {
     const server = await createStatusServer({
       port: 0,
       snapshot: sampleSnapshot,
@@ -119,9 +119,27 @@ describe('createStatusServer', () => {
       expect(res.status).toBe(200);
       expect(res.headers.get('content-type')).toContain('text/html');
       const html = await res.text();
-      expect(html).toContain('NEAR SOLVER DESK');
-      expect(html).toContain('/api/status');
-      expect(html).toContain('Decision mix');
+      expect(html).toContain('Near Solver Desk');
+      expect(html).toContain('/desk.js');
+      expect(html).toContain('id="c"');
+    } finally {
+      await server.close();
+    }
+  });
+
+  it('serves /desk.js as javascript', async () => {
+    const server = await createStatusServer({
+      port: 0,
+      snapshot: sampleSnapshot,
+      recentJournal: () => [],
+    });
+    try {
+      const res = await fetch(`http://127.0.0.1:${server.port}/desk.js`);
+      expect(res.status).toBe(200);
+      expect(res.headers.get('content-type')).toContain('javascript');
+      const js = await res.text();
+      expect(js).toContain('FBM');
+      expect(js).toContain('[desk] client loaded');
     } finally {
       await server.close();
     }

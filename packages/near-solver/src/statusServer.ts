@@ -4,13 +4,15 @@
  * X18: 127.0.0.1 ONLY, GET ONLY.
  *  - /api/status
  *  - /api/journal/recent
- *  - /metrics          Prometheus text (Grafana/Prometheus scrape)
+ *  - /metrics
+ *  - /desk.js
  *  - /
  */
 
 import { createServer } from 'node:http';
 import type { StatusReportInput } from './status.js';
 import { DASHBOARD_HTML } from './dashboardHtml.js';
+import { DASHBOARD_JS } from './dashboardClient.js';
 import { buildPrometheusText } from './metrics.js';
 
 const HOST = '127.0.0.1';
@@ -49,9 +51,18 @@ export function createStatusServer(opts: StatusServerOptions): Promise<StatusSer
       res.writeHead(405, { 'content-type': 'text/plain' }).end('read-only');
       return;
     }
-    switch (req.url) {
+    const url = req.url?.split('?')[0] ?? '';
+    switch (url) {
       case '/':
         res.writeHead(200, { 'content-type': 'text/html; charset=utf-8' }).end(DASHBOARD_HTML);
+        return;
+      case '/desk.js':
+        res
+          .writeHead(200, {
+            'content-type': 'application/javascript; charset=utf-8',
+            'cache-control': 'no-store',
+          })
+          .end(DASHBOARD_JS);
         return;
       case '/api/status':
         res
