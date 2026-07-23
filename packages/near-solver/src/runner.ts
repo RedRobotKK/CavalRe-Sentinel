@@ -172,33 +172,32 @@ export class SolverRunner {
   }
 
   /**
-   * Match settlement → pending quote → release reservation → attribute PnL.
-   * Unmatched settlements are counted, never invent fill economics.
+   * Match settlement → pending quote → commit inventory → attribute PnL.
+   * Unmatched settlements are counted; economics are never invented.
    */
   private onSettlement(event: SettlementEvent): void {
     this.count('settlement:observed');
-    const matched = this.pendingQuotes.take(event.quoteId);
+    const matched = this.pendingQuotes.pending().find((q) => q.quoteId === event.quoteId);
     if (!matched) {
       this.count('settlement:unmatched');
       return;
     }
+    this.pendingQuotes.remove(event.quoteId);
 
-    this.inventory.release(matched.quoteId);
-    this.count('settlement:matched');
-
-    // Apply inventory movement as if fill completed (in → out).
     try {
-      this.opts.baseInventory.deposit(matched.assetIn, matched.amountInRaw, `settle:${event.quoteId}`);
-      this.opts.baseInventory.withdraw(
-        matched.assetOut,
-        matched.amountOutRaw,
-        `settle:${event.quoteId}`
-      );
+      this.inventory.commit(matched.quoteId, {
+        assetIn: matched.assetIn,
+        amountInRaw: matched.amountInRaw,
+        assetOut: matched.assetOut,
+        amountOutRaw: matched.amountOutRaw,
+        txHash: `settle:${event.quoteId}`,
+      });
     } catch {
       this.count('settlement:inventory_error');
       this.opts.riskGuard.tripKillSwitch('settlement_inventory_error');
       return;
     }
+    this.count('settlement:matched');
 
     const edge = realizedEdgeUsd({
       assetIn: matched.assetIn,

@@ -1,12 +1,5 @@
 /**
  * STATUS SERVER — read-only data spine.
- *
- * X18: 127.0.0.1 ONLY, GET ONLY.
- *  - /api/status
- *  - /api/journal/recent
- *  - /metrics
- *  - /desk.js
- *  - /
  */
 
 import { createServer } from 'node:http';
@@ -42,6 +35,7 @@ export function buildStatusJson(s: StatusReportInput): string {
     activeReservations: s.activeReservations,
     journalDropped: s.journalDropped,
     relay: s.relay ?? null,
+    risk: s.risk ?? null,
   });
 }
 
