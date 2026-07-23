@@ -1,6 +1,6 @@
 # Waiting on Partner JWT
 
-**Status:** external gate — applied, no key yet.
+**Status:** external gate — applied, no key yet.  
 **Policy:** no desk chrome · cover ≠ bus proof · no notional scale.
 
 ## What is done without the key
@@ -11,7 +11,10 @@
 | Oracle OneClick + staleness | Green (`npm run oracle:verify`) |
 | WS transport JWT-ready | `Authorization: Bearer` when `PARTNER_JWT` set |
 | Status honesty | `auth=none\|bearer` + frames separate |
-| Settlement → pending match → `recordRealizedPnlUsd` | Wired |
+| **IntentRegister** on quote path | observe → decide → reserve; maintenance sweep 5s |
+| **Outbox** on live send | markSent enqueues; drain on send + maintenance |
+| Register gauges | `/metrics` + `/api/status` + status text line |
+| XState mirror | tests / Stately only — not inventory authority |
 | Dry-run default / live refuses without key | Enforced |
 
 ## What is blocked
@@ -19,6 +22,7 @@
 1. `framesReceived > 0` on residual bus  
 2. Residual markout  
 3. Live quotes / capital  
+4. Protocol-bit-identical `quote_hash` (interim = SHA-256 of frame)  
 
 ## Day key arrives
 
@@ -27,20 +31,26 @@
 export PARTNER_JWT='…'          # raw JWT or "Bearer …"
 
 cd /Users/daniel/Development/CavalRe-Near-Solver
-bash scripts/extract-from-sentinel.sh   # if pulling latest
-npm run build
+bash scripts/extract-from-sentinel.sh
+npm install && npm run build
 
-# residual only — no --sim
+# residual only — no --sim / cover as proof
 npm run solver:dry-run
 ```
 
-Expect status line:
+Expect:
 
 ```text
 bus: N frames | auth=bearer | … — receiving residual
+register: reserved=… sent=0 settled=… | outbox_pending=0
 ```
 
-If `auth=bearer` and frames stay 0 after several minutes: JWT invalid/revoked or portal access not enabled for solver bus — escalate with partner support, do not “fix” by inventing traffic.
+```bash
+curl -s http://127.0.0.1:8787/metrics | grep -E 'register|frames|auth_bearer'
+curl -s http://127.0.0.1:8787/api/status | jq '.register, .relay'
+```
+
+If `auth=bearer` and frames stay 0 after several minutes: JWT invalid/revoked or portal access not enabled — escalate with partner; do not invent traffic.
 
 ## Portal
 
@@ -50,6 +60,8 @@ If `auth=bearer` and frames stay 0 after several minutes: JWT invalid/revoked or
 
 ## Still after first frames
 
-- Markout on residual fills only  
-- Reconciler against funded `intents.near` account  
-- Microscopic live caps — not before stable markouts  
+1. Confirm register `reserved` rises with residual accepts  
+2. Markout on residual fills only  
+3. Reconciler against funded `intents.near` account  
+4. Replace interim quote_hash with protocol hash when matched on settlement  
+5. Microscopic live caps — not before stable markouts  

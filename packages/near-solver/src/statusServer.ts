@@ -36,6 +36,12 @@ export function buildStatusJson(s: StatusReportInput): string {
     journalDropped: s.journalDropped,
     relay: s.relay ?? null,
     risk: s.risk ?? null,
+    register: s.register
+      ? {
+          counts: s.register.counts,
+          outboxPending: s.register.outboxPending,
+        }
+      : null,
   });
 }
 

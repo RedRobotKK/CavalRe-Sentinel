@@ -1,15 +1,5 @@
 /**
  * Prometheus text exposition for the status snapshot.
- *
- * Systematic ops export so Grafana/Prometheus can judge benefit from real
- * series — not a second source of truth for trading decisions.
- *
- * Rules:
- *  - Counters are monotonic (runner counters).
- *  - Gauges are instantaneous (uptime, reservations, kill, relay).
- *  - Inventory is exported as gauge of *human* units for charts only;
- *    exact raw remains on /api/status. Label by symbol.
- *  - Decision reasons become counter labels (sanitized).
  */
 
 import type { StatusReportInput } from './status.js';
@@ -22,9 +12,6 @@ function escLabel(value: string): string {
   return value.replace(/\\/g, '\\\\').replace(/\n/g, '\\n').replace(/"/g, '\\"');
 }
 
-/**
- * Build Prometheus 0.0.4 text format body.
- */
 export function buildPrometheusText(s: StatusReportInput): string {
   const lines: string[] = [];
   const help = (name: string, text: string) => {
@@ -59,7 +46,27 @@ export function buildPrometheusText(s: StatusReportInput): string {
   help('cavalre_solver_journal_dropped', 'Journal lines dropped by sink failure');
   lines.push(`cavalre_solver_journal_dropped ${s.journalDropped}`);
 
+  // Intent register lifecycle (gauges)
+  if (s.register) {
+    help(
+      'cavalre_solver_register_intents',
+      'IntentRegister rows by lifecycle state'
+    );
+    for (const [state, n] of Object.entries(s.register.counts)) {
+      if (n === undefined) continue;
+      lines.push(
+        `cavalre_solver_register_intents{state="${escLabel(sanitizeLabel(state))}"} ${n}`
+      );
+    }
+    help('cavalre_solver_outbox_pending', 'Transactional outbox rows pending publish');
+    lines.push(`cavalre_solver_outbox_pending ${s.register.outboxPending}`);
+  }
+
   const relay = s.relay ?? { framesReceived: 0, malformedFrames: 0, reconnects: 0 };
+  const auth = relay.auth ?? 'none';
+  help('cavalre_solver_relay_auth_bearer', '1 if PARTNER_JWT configured (not proof of frames)');
+  lines.push(`cavalre_solver_relay_auth_bearer ${auth === 'bearer' ? 1 : 0}`);
+
   helpCounter('cavalre_solver_relay_frames_total', 'Relay frames received');
   lines.push(`cavalre_solver_relay_frames_total ${relay.framesReceived}`);
   helpCounter('cavalre_solver_relay_malformed_total', 'Malformed relay frames');
