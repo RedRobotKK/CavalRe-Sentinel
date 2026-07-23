@@ -172,48 +172,19 @@ export class SolverRunner {
   }
 
   /**
-   * Match settlement → pending quote → commit inventory → attribute PnL.
-   * Unmatched settlements are counted; economics are never invented.
+   * Bus settlement carries quote_hash / intent_hash / tx_hash — not quote_id.
+   * Matching quote_id ↔ quote_hash is not wired yet; fill attribution is the
+   * Reconciler's job (balance drift vs pendingQuotes, X1). Count only.
+   * NEVER invent a fill or PnL from an unmatched hash.
    */
   private onSettlement(event: SettlementEvent): void {
     this.count('settlement:observed');
-    const matched = this.pendingQuotes.pending().find((q) => q.quoteId === event.quoteId);
-    if (!matched) {
-      this.count('settlement:unmatched');
-      return;
-    }
-    this.pendingQuotes.remove(event.quoteId);
-
-    try {
-      this.inventory.commit(matched.quoteId, {
-        assetIn: matched.assetIn,
-        amountInRaw: matched.amountInRaw,
-        assetOut: matched.assetOut,
-        amountOutRaw: matched.amountOutRaw,
-        txHash: `settle:${event.quoteId}`,
-      });
-    } catch {
-      this.count('settlement:inventory_error');
-      this.opts.riskGuard.tripKillSwitch('settlement_inventory_error');
-      return;
-    }
-    this.count('settlement:matched');
-
-    const edge = realizedEdgeUsd({
-      assetIn: matched.assetIn,
-      amountInRaw: matched.amountInRaw,
-      decimalsIn: this.opts.registry.get(matched.assetIn)?.decimals ?? 0n,
-      assetOut: matched.assetOut,
-      amountOutRaw: matched.amountOutRaw,
-      decimalsOut: this.opts.registry.get(matched.assetOut)?.decimals ?? 0n,
-      usdPrice: (asset) => this.opts.priceSource.usdPrice(asset),
-    });
-    if (edge === null) {
-      this.count('settlement:unpriceable_pnl');
-      return;
-    }
-    this.opts.riskGuard.recordRealizedPnlUsd(edge);
-    this.count('settlement:pnl_recorded');
+    // Intentionally no inventory/PnL mutation here.
+    // event.quoteHash / intentHash / txHash available for future index.
+    void event.quoteHash;
+    void event.intentHash;
+    void event.txHash;
+    this.count('settlement:deferred_to_reconciler');
   }
 }
 
